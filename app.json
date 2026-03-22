@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "cf0df373-6843-4f66-978a-4fa8bf56f488"
+      }
+    },
+    "android": {
+      "package": "com.nicobaruna.liburindonesia"
+    }
+  }
+}
