@@ -8,7 +8,6 @@ import {
   StatusBar,
   Platform,
   TouchableOpacity,
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
 } from 'react-native';
@@ -120,34 +119,6 @@ function NumberInput({
   );
 }
 
-function ApiKeyInput({
-  value,
-  onChangeText,
-}: {
-  value: string;
-  onChangeText: (v: string) => void;
-}) {
-  return (
-    <View style={styles.inputGroup}>
-      <Text style={styles.inputLabel}>Claude API Key</Text>
-      <View style={styles.inputWrapper}>
-        <TextInput
-          style={[styles.textInput, {flex: 1, fontSize: 12}]}
-          value={value}
-          onChangeText={onChangeText}
-          placeholder="sk-ant-..."
-          placeholderTextColor={COLORS.textSub}
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-      </View>
-      <Text style={styles.inputHint}>
-        Dapatkan API key di console.anthropic.com
-      </Text>
-    </View>
-  );
-}
 
 function ResultCard({result, simulation}: {
   result: FinancialAnalysisResult;
@@ -247,7 +218,6 @@ function ResultCard({result, simulation}: {
 }
 
 export default function FinancialPlannerScreen() {
-  const [apiKey, setApiKey] = useState('');
   const [monthlySalary, setMonthlySalary] = useState('');
   const [tripDays, setTripDays] = useState('');
   const [leaveDays, setLeaveDays] = useState('');
@@ -255,15 +225,10 @@ export default function FinancialPlannerScreen() {
   const [tripCost, setTripCost] = useState('');
   const [userGoal, setUserGoal] = useState<UserGoal>('balance');
 
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<FinancialAnalysisResult | null>(null);
   const [simulation, setSimulation] = useState<ReturnType<typeof buildSimulation> | null>(null);
 
-  const handleAnalyze = async () => {
-    if (!apiKey.trim()) {
-      Alert.alert('API Key diperlukan', 'Masukkan Claude API key untuk melanjutkan.');
-      return;
-    }
+  const handleAnalyze = () => {
     if (!monthlySalary || !tripCost) {
       Alert.alert('Data tidak lengkap', 'Isi minimal gaji bulanan dan biaya perjalanan.');
       return;
@@ -280,18 +245,7 @@ export default function FinancialPlannerScreen() {
 
     const sim = buildSimulation(input);
     setSimulation(sim);
-    setLoading(true);
-    setResult(null);
-
-    try {
-      const analysisResult = await analyzeFinancial(apiKey, input);
-      setResult(analysisResult);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Terjadi kesalahan.';
-      Alert.alert('Gagal', `Analisis gagal: ${msg}`);
-    } finally {
-      setLoading(false);
-    }
+    setResult(analyzeFinancial(input));
   };
 
   return (
@@ -303,7 +257,7 @@ export default function FinancialPlannerScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Perencana Finansial</Text>
         <Text style={styles.headerSub}>
-          Analisis dampak finansial liburan kamu dengan AI
+          Hitung dampak finansial liburanmu secara instan
         </Text>
       </View>
 
@@ -311,12 +265,6 @@ export default function FinancialPlannerScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled">
-
-        {/* API Key Section */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Konfigurasi API</Text>
-          <ApiKeyInput value={apiKey} onChangeText={setApiKey} />
-        </View>
 
         {/* Income Section */}
         <View style={styles.card}>
@@ -425,22 +373,11 @@ export default function FinancialPlannerScreen() {
 
         {/* Analyze Button */}
         <TouchableOpacity
-          style={[styles.analyzeBtn, loading && styles.analyzeBtnDisabled]}
+          style={styles.analyzeBtn}
           onPress={handleAnalyze}
-          disabled={loading}
           activeOpacity={0.8}>
-          {loading ? (
-            <ActivityIndicator color={COLORS.white} size="small" />
-          ) : (
-            <Text style={styles.analyzeBtnText}>Analisis Sekarang</Text>
-          )}
+          <Text style={styles.analyzeBtnText}>Hitung Sekarang</Text>
         </TouchableOpacity>
-
-        {loading && (
-          <Text style={styles.loadingText}>
-            Claude sedang menganalisis data finansial kamu...
-          </Text>
-        )}
 
         {/* Result */}
         {result && simulation && (
@@ -534,11 +471,6 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     padding: 0,
   },
-  inputHint: {
-    fontSize: 11,
-    color: COLORS.textSub,
-    marginTop: 4,
-  },
   toggleRow: {
     flexDirection: 'row',
     gap: 8,
@@ -610,20 +542,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 6,
   },
-  analyzeBtnDisabled: {
-    opacity: 0.7,
-  },
   analyzeBtnText: {
     color: COLORS.white,
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 0.3,
-  },
-  loadingText: {
-    textAlign: 'center',
-    color: COLORS.textSub,
-    fontSize: 13,
-    marginBottom: 16,
   },
   // Result styles
   resultContainer: {
