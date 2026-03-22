@@ -17,8 +17,17 @@ function replaceInFile(filePath, regex, replacement) {
 
 // 1. Fix root build.gradle
 const rootBuildGradlePath = path.join(__dirname, 'android', 'build.gradle');
-replaceInFile(rootBuildGradlePath, /\s*kotlinVersion = findProperty\('android.kotlinVersion'\) \?\: '1\.8\.10'/, '\n        kotlinVersion = "1.8.10"');
-replaceInFile(rootBuildGradlePath, /classpath\('com\.android\.tools\.build\:gradle'\)/, 'classpath("com.android.tools.build:gradle:8.1.1")\n        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")');
+// Set kotlinVersion
+replaceInFile(rootBuildGradlePath, /kotlinVersion = (?:findProperty\('android\.kotlinVersion'\) \?\: '1\.8\.10'|"(?:1\.8\.10|1\.9\.22)")/, 'kotlinVersion = "1.8.10"');
+// Fix dependencies
+if (fs.existsSync(rootBuildGradlePath)) {
+    let content = fs.readFileSync(rootBuildGradlePath, 'utf8');
+    if (!content.includes('kotlin-gradle-plugin')) {
+        content = content.replace(/dependencies \{/, 'dependencies {\n        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")');
+        fs.writeFileSync(rootBuildGradlePath, content);
+        console.log('Added kotlin-gradle-plugin to android/build.gradle');
+    }
+}
 
 // 2. Fix expo-modules-core publishing bug
 const expoPluginPath = path.join(__dirname, 'node_modules', 'expo-modules-core', 'android', 'ExpoModulesCorePlugin.gradle');
@@ -39,3 +48,20 @@ if (fs.existsSync(appBuildGradlePath)) {
         replaceInFile(appBuildGradlePath, /android \{/, 'android {\n    namespace "com.nicobaruna.liburindonesia"');
     }
 }
+
+// 4. Update splash background color
+const colorsPath = path.join(__dirname, 'android', 'app', 'src', 'main', 'res', 'values', 'colors.xml');
+if (fs.existsSync(colorsPath)) {
+    let content = fs.readFileSync(colorsPath, 'utf8');
+    if (!content.includes('splashscreen_background')) {
+        content = content.replace(/<\/resources>/, '  <color name="splashscreen_background">#ffffff</color>\n</resources>');
+        fs.writeFileSync(colorsPath, content);
+        console.log('Added splashscreen_background to colors.xml');
+    }
+}
+
+// 5. Update gradle-wrapper.properties
+const wrapperPath = path.join(__dirname, 'android', 'gradle', 'wrapper', 'gradle-wrapper.properties');
+replaceInFile(wrapperPath, /distributionUrl=https\\:\/\/services\.gradle\.org\/distributions\/gradle-8\.3-all\.zip/, 'distributionUrl=https\\://services.gradle.org/distributions/gradle-8.6-all.zip');
+
+console.log('All patches finished.');
