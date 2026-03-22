@@ -1,12 +1,17 @@
 {
   "expo": {
+    "icon": "./assets/icon.png",
     "extra": {
       "eas": {
         "projectId": "cf0df373-6843-4f66-978a-4fa8bf56f488"
       }
     },
     "android": {
-      "package": "com.nicobaruna.liburindonesia"
+      "package": "com.nicobaruna.liburindonesia",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#C41E24"
+      }
     },
     "plugins": [
       [
@@ -14,7 +19,6 @@
         {
           "android": {
             "kotlinVersion": "1.8.10",
-            "agpVersion": "8.1.1",
             "compileSdkVersion": 34,
             "targetSdkVersion": 34,
             "minSdkVersion": 23
