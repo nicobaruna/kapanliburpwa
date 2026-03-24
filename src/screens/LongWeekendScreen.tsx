@@ -7,13 +7,10 @@ import {
   StatusBar,
   Platform,
   TouchableOpacity,
-<<<<<<< HEAD
-=======
   Modal,
   Share,
   Linking,
   Pressable,
->>>>>>> 06816d168387e6769ed6eb8c8f2c5c0ea60f8799
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {LONG_WEEKENDS_2026} from '../data/holidays2026';
