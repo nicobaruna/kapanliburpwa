@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useRef, useCallback} from 'react';
 import {
   View,
   Text,
@@ -11,14 +11,18 @@ import {
   Share,
   Linking,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
+import {captureRef} from 'react-native-view-shot';
+import RNShare from 'react-native-share';
 import {LONG_WEEKENDS_2026} from '../data/holidays2026';
 import {
   formatLongWeekendRange,
   getDaysUntil,
   countdownLabel,
 } from '../utils/dateUtils';
+import LongWeekendShareCard from '../components/LongWeekendShareCard';
 
 const COLORS = {
   red: '#C8102E',
@@ -34,6 +38,7 @@ const COLORS = {
   redLight: '#FDECEA',
   border: '#E8E0D8',
   overlay: 'rgba(0,0,0,0.5)',
+  whatsapp: '#25D366',
 };
 
 const DAY_COLORS = [
@@ -41,35 +46,10 @@ const DAY_COLORS = [
   '#1ABC9C', '#D35400', '#C0392B',
 ];
 
-const SOCIAL_PLATFORMS = [
-  {
-    id: 'x',
-    label: 'X',
-    icon: '𝕏',
-    color: '#000000',
-    bg: '#F0F0F0',
-  },
-  {
-    id: 'threads',
-    label: 'Threads',
-    icon: '@',
-    color: '#FFFFFF',
-    bg: '#000000',
-  },
-  {
-    id: 'instagram',
-    label: 'Instagram',
-    icon: '📸',
-    color: '#FFFFFF',
-    bg: '#E1306C',
-  },
-  {
-    id: 'tiktok',
-    label: 'TikTok',
-    icon: '♪',
-    color: '#FFFFFF',
-    bg: '#010101',
-  },
+const OTHER_PLATFORMS = [
+  {id: 'x',        label: 'X',         icon: '𝕏', color: '#000000', bg: '#F0F0F0'},
+  {id: 'threads',  label: 'Threads',   icon: '@', color: '#FFFFFF', bg: '#000000'},
+  {id: 'instagram',label: 'Instagram', icon: '📸', color: '#FFFFFF', bg: '#E1306C'},
 ];
 
 function buildShareText(lw: typeof LONG_WEEKENDS_2026[0]): string {
@@ -78,7 +58,6 @@ function buildShareText(lw: typeof LONG_WEEKENDS_2026[0]): string {
     .filter((h, idx, arr) => arr.findIndex(x => x.id === h.id) === idx)
     .map(h => `${h.emoji} ${h.shortName}`)
     .join('\n');
-
   return (
     `🏖️ Long Weekend ${lw.label}!\n` +
     `📅 ${range} · ${lw.totalDays} hari\n\n` +
@@ -90,40 +69,41 @@ function buildShareText(lw: typeof LONG_WEEKENDS_2026[0]): string {
 
 async function shareToX(text: string) {
   const encoded = encodeURIComponent(text);
-  const url = `https://twitter.com/intent/tweet?text=${encoded}`;
   const appUrl = `twitter://post?message=${encoded}`;
+  const webUrl = `https://twitter.com/intent/tweet?text=${encoded}`;
   const canOpen = await Linking.canOpenURL(appUrl);
-  await Linking.openURL(canOpen ? appUrl : url);
+  await Linking.openURL(canOpen ? appUrl : webUrl);
 }
 
 async function shareToThreads(text: string) {
   const encoded = encodeURIComponent(text);
-  const url = `https://www.threads.net/intent/post?text=${encoded}`;
-  await Linking.openURL(url);
+  await Linking.openURL(`https://www.threads.net/intent/post?text=${encoded}`);
 }
 
-async function shareToInstagram(text: string) {
-  await Share.share({message: text}, {dialogTitle: 'Bagikan ke Instagram'});
-}
-
-async function shareToTikTok(text: string) {
-  await Share.share({message: text}, {dialogTitle: 'Bagikan ke TikTok'});
-}
+// ─────────────────────────────────────────────────────
+// Share Modal
+// ─────────────────────────────────────────────────────
+type ShareTarget = {
+  lw: typeof LONG_WEEKENDS_2026[0];
+  accentColor: string;
+};
 
 type ShareModalProps = {
   visible: boolean;
-  lw: typeof LONG_WEEKENDS_2026[0] | null;
+  target: ShareTarget | null;
   onClose: () => void;
+  onWhatsAppShare: () => Promise<void>;
 };
 
-function ShareModal({visible, lw, onClose}: ShareModalProps) {
+function ShareModal({visible, target, onClose, onWhatsAppShare}: ShareModalProps) {
   const [sharing, setSharing] = useState<string | null>(null);
 
-  if (!lw) {return null;}
+  if (!target) {return null;}
 
+  const {lw} = target;
   const shareText = buildShareText(lw);
 
-  const handleShare = async (platformId: string) => {
+  const handleOtherShare = async (platformId: string) => {
     setSharing(platformId);
     try {
       switch (platformId) {
@@ -134,19 +114,23 @@ function ShareModal({visible, lw, onClose}: ShareModalProps) {
           await shareToThreads(shareText);
           break;
         case 'instagram':
-          await shareToInstagram(shareText);
-          break;
-        case 'tiktok':
-          await shareToTikTok(shareText);
+          await Share.share({message: shareText}, {dialogTitle: 'Bagikan ke Instagram'});
           break;
       }
     } catch (_) {
-      // user cancelled or error
     } finally {
       setSharing(null);
-      if (platformId === 'instagram' || platformId === 'tiktok') {
-        onClose();
-      }
+      if (platformId === 'instagram') onClose();
+    }
+  };
+
+  const handleWhatsApp = async () => {
+    setSharing('whatsapp');
+    try {
+      await onWhatsAppShare();
+    } finally {
+      setSharing(null);
+      onClose();
     }
   };
 
@@ -158,7 +142,6 @@ function ShareModal({visible, lw, onClose}: ShareModalProps) {
       onRequestClose={onClose}>
       <Pressable style={styles.modalOverlay} onPress={onClose}>
         <Pressable style={styles.modalSheet} onPress={() => {}}>
-          {/* Handle bar */}
           <View style={styles.handleBar} />
 
           <Text style={styles.modalTitle}>Bagikan Long Weekend</Text>
@@ -166,12 +149,33 @@ function ShareModal({visible, lw, onClose}: ShareModalProps) {
             🏖️ {lw.label} · {formatLongWeekendRange(lw)} · {lw.totalDays} hari
           </Text>
 
+          {/* WhatsApp – utama (image) */}
+          <TouchableOpacity
+            style={[styles.whatsappButton, sharing === 'whatsapp' && {opacity: 0.7}]}
+            onPress={handleWhatsApp}
+            disabled={sharing !== null}
+            activeOpacity={0.8}>
+            {sharing === 'whatsapp' ? (
+              <ActivityIndicator color={COLORS.white} size="small" />
+            ) : (
+              <>
+                <Text style={styles.whatsappIcon}>💬</Text>
+                <View>
+                  <Text style={styles.whatsappLabel}>Bagikan ke WhatsApp</Text>
+                  <Text style={styles.whatsappHint}>Dikirim sebagai gambar</Text>
+                </View>
+              </>
+            )}
+          </TouchableOpacity>
+
+          {/* Platform lain (teks) */}
+          <Text style={styles.otherLabel}>Platform lain (teks)</Text>
           <View style={styles.platformRow}>
-            {SOCIAL_PLATFORMS.map(p => (
+            {OTHER_PLATFORMS.map(p => (
               <TouchableOpacity
                 key={p.id}
                 style={styles.platformButton}
-                onPress={() => handleShare(p.id)}
+                onPress={() => handleOtherShare(p.id)}
                 disabled={sharing !== null}
                 activeOpacity={0.75}>
                 <View
@@ -180,18 +184,12 @@ function ShareModal({visible, lw, onClose}: ShareModalProps) {
                     {backgroundColor: p.bg},
                     sharing === p.id && styles.platformIconActive,
                   ]}>
-                  <Text style={[styles.platformIcon, {color: p.color}]}>
-                    {p.icon}
-                  </Text>
+                  <Text style={[styles.platformIcon, {color: p.color}]}>{p.icon}</Text>
                 </View>
                 <Text style={styles.platformLabel}>{p.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
-
-          <Text style={styles.shareHint}>
-            Instagram & TikTok: pilih aplikasi dari menu berbagi
-          </Text>
 
           <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
             <Text style={styles.cancelText}>Batal</Text>
@@ -202,12 +200,16 @@ function ShareModal({visible, lw, onClose}: ShareModalProps) {
   );
 }
 
+// ─────────────────────────────────────────────────────
+// Main Screen
+// ─────────────────────────────────────────────────────
 export default function LongWeekendScreen() {
   const navigation = useNavigation<any>();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const [shareTarget, setShareTarget] = useState<typeof LONG_WEEKENDS_2026[0] | null>(null);
+  const [shareTarget, setShareTarget] = useState<ShareTarget | null>(null);
+  const shareCardRef = useRef<View>(null);
 
   const upcoming = LONG_WEEKENDS_2026.filter(lw => {
     const end = new Date(lw.endDate + 'T00:00:00');
@@ -218,6 +220,21 @@ export default function LongWeekendScreen() {
     const end = new Date(lw.endDate + 'T00:00:00');
     return end < today;
   });
+
+  const captureAndShareWhatsApp = useCallback(async () => {
+    if (!shareCardRef.current) return;
+    // Tunggu sebentar agar view sudah fully rendered
+    await new Promise(r => setTimeout(r, 150));
+    const uri = await captureRef(shareCardRef, {format: 'jpg', quality: 0.95});
+    await RNShare.shareSingle({
+      social: RNShare.Social.WHATSAPP,
+      url: uri,
+      type: 'image/jpeg',
+      message: shareTarget
+        ? `🏖️ ${shareTarget.lw.label} · ${formatLongWeekendRange(shareTarget.lw)} · ${shareTarget.lw.totalDays} hari`
+        : '',
+    });
+  }, [shareTarget]);
 
   const renderLW = (lw: typeof LONG_WEEKENDS_2026[0], index: number, isPast: boolean) => {
     const daysUntil = getDaysUntil(lw.startDate);
@@ -235,11 +252,9 @@ export default function LongWeekendScreen() {
           isActive && styles.lwCardActive,
         ]}>
 
-        {/* Top accent bar */}
         <View style={[styles.accentBar, {backgroundColor: isPast ? COLORS.border : accentColor}]} />
 
         <View style={styles.lwCardContent}>
-          {/* Header row */}
           <View style={styles.lwHeaderRow}>
             <View style={styles.lwHeaderLeft}>
               <Text style={styles.lwEmoji}>🏖️</Text>
@@ -254,7 +269,6 @@ export default function LongWeekendScreen() {
             </View>
 
             <View style={styles.lwHeaderRight}>
-              {/* Day count badge */}
               <View
                 style={[
                   styles.dayBadge,
@@ -268,17 +282,15 @@ export default function LongWeekendScreen() {
                 </Text>
               </View>
 
-              {/* Share button */}
               <TouchableOpacity
                 style={styles.shareBtn}
-                onPress={() => setShareTarget(lw)}
+                onPress={() => setShareTarget({lw, accentColor})}
                 activeOpacity={0.7}>
                 <Text style={styles.shareBtnIcon}>↗</Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Status / countdown */}
           {!isPast && (
             <View style={styles.countdownRow}>
               {isActive ? (
@@ -297,7 +309,6 @@ export default function LongWeekendScreen() {
             </View>
           )}
 
-          {/* Holiday details */}
           <View style={styles.holidayDetails}>
             {lw.holidays
               .filter((h, idx, arr) => arr.findIndex(x => x.id === h.id) === idx)
@@ -305,10 +316,7 @@ export default function LongWeekendScreen() {
                 <View key={h.id} style={styles.holidayDetailRow}>
                   <Text style={styles.holidayDetailEmoji}>{h.emoji}</Text>
                   <Text
-                    style={[
-                      styles.holidayDetailName,
-                      isPast && styles.pastText,
-                    ]}
+                    style={[styles.holidayDetailName, isPast && styles.pastText]}
                     numberOfLines={1}>
                     {h.shortName}
                   </Text>
@@ -341,7 +349,6 @@ export default function LongWeekendScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
 
-        {/* Summary bar */}
         <View style={styles.summaryBar}>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryNumber}>{LONG_WEEKENDS_2026.length}</Text>
@@ -361,7 +368,6 @@ export default function LongWeekendScreen() {
           </View>
         </View>
 
-        {/* Upcoming */}
         {upcoming.length > 0 && (
           <>
             <Text style={styles.sectionTitle}>Mendatang</Text>
@@ -369,7 +375,6 @@ export default function LongWeekendScreen() {
           </>
         )}
 
-        {/* Past */}
         {past.length > 0 && (
           <>
             <Text style={[styles.sectionTitle, styles.pastSectionTitle]}>
@@ -382,15 +387,30 @@ export default function LongWeekendScreen() {
         <View style={styles.bottomSpace} />
       </ScrollView>
 
+      {/* Kartu share yang di-render off-screen untuk di-capture */}
+      {shareTarget && (
+        <View style={styles.offScreen} collapsable={false}>
+          <LongWeekendShareCard
+            ref={shareCardRef}
+            lw={shareTarget.lw}
+            accentColor={shareTarget.accentColor}
+          />
+        </View>
+      )}
+
       <ShareModal
         visible={shareTarget !== null}
-        lw={shareTarget}
+        target={shareTarget}
         onClose={() => setShareTarget(null)}
+        onWhatsAppShare={captureAndShareWhatsApp}
       />
     </View>
   );
 }
 
+// ─────────────────────────────────────────────────────
+// Styles
+// ─────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -594,7 +614,14 @@ const styles = StyleSheet.create({
     height: 30,
   },
 
-  // Modal styles
+  // Off-screen share card
+  offScreen: {
+    position: 'absolute',
+    top: 0,
+    left: -1000,
+  },
+
+  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: COLORS.overlay,
@@ -627,21 +654,63 @@ const styles = StyleSheet.create({
     color: COLORS.textSub,
     textAlign: 'center',
     marginTop: 6,
-    marginBottom: 24,
+    marginBottom: 20,
+  },
+  // WhatsApp button (utama)
+  whatsappButton: {
+    backgroundColor: COLORS.whatsapp,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginBottom: 20,
+    justifyContent: 'center',
+    elevation: 3,
+    shadowColor: COLORS.whatsapp,
+    shadowOffset: {width: 0, height: 3},
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    minHeight: 56,
+  },
+  whatsappIcon: {
+    fontSize: 28,
+  },
+  whatsappLabel: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  whatsappHint: {
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: 11,
+    fontWeight: '500',
+    marginTop: 1,
+  },
+  otherLabel: {
+    fontSize: 12,
+    color: COLORS.textSub,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 14,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
   platformRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 16,
+    justifyContent: 'center',
+    gap: 20,
+    marginBottom: 20,
   },
   platformButton: {
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   platformIconWrap: {
-    width: 60,
-    height: 60,
-    borderRadius: 18,
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 2,
@@ -654,20 +723,13 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   platformIcon: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '900',
   },
   platformLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: COLORS.text,
-  },
-  shareHint: {
-    fontSize: 11,
-    color: COLORS.textSub,
-    textAlign: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 8,
   },
   cancelButton: {
     backgroundColor: COLORS.bg,
