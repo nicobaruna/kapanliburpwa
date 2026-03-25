@@ -84,3 +84,7 @@ logs
 .env
 .env.local
 .env.*.local
+
+# Firebase / Google Services (sensitive credentials - use GitHub Secrets instead)
+google-services.json
+GoogleService-Info.plist
