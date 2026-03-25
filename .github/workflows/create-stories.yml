@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       project_number:
-        description: 'Nomor GitHub Project (lihat URL project di GitHub)'
-        required: true
-        default: '1'
+        description: 'Nomor GitHub Project (default: 2)'
+        required: false
+        default: '2'
 
 jobs:
   create-stories:
@@ -23,7 +23,7 @@ jobs:
             NAME=$(echo $LABEL | cut -d: -f1)
             COLOR=$(echo $LABEL | cut -d: -f2)
             curl -s -X POST \
-              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
               -H "Accept: application/vnd.github+json" \
               -d "{\"name\": \"$NAME\", \"color\": \"$COLOR\"}" \
               "https://api.github.com/repos/${{ github.repository }}/labels" \
@@ -33,7 +33,7 @@ jobs:
 
       - name: Run create-stories script
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
           GITHUB_PROJECT_NUMBER: ${{ github.event.inputs.project_number }}
         run: |
           chmod +x scripts/create-github-stories.sh
