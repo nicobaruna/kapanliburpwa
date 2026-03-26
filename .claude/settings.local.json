@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find D:/dev/Kapanlibur/android -name ic_notification*)"
+      "Bash(find D:/dev/Kapanlibur/android -name ic_notification*)",
+      "Bash(node -e \"const sharp=require\\(''sharp''\\); console.log\\(''sharp ok''\\)\")",
+      "Bash(node -e \":*)",
+      "Bash(npm run:*)",
+      "Bash(cd:*)"
     ]
   }
 }
