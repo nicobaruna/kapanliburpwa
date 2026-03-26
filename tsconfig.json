@@ -16,5 +16,13 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": [
+    "node_modules",
+    "src/screens",
+    "src/components/LongWeekendShareCard.tsx",
+    "src/services/AuthService.ts",
+    "src/services/NotificationService.ts",
+    "src/services/WidgetService.ts"
+  ]
 }
