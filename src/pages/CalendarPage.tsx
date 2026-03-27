@@ -1,283 +1,287 @@
-import { useState, useMemo } from 'react';
-import { HOLIDAYS_2026, LONG_WEEKENDS_2026 } from '../data/holidays2026';
-import { formatDate, getDaysUntil } from '../utils/dateUtils';
-
-const DAYS_SHORT = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-const MONTHS_ID = [
-  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
-];
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getUpcomingHolidays, getNextLongWeekend } from '../utils/dateUtils';
+import type { Holiday, LongWeekend } from '../data/holidays2026';
 
 export default function CalendarPage() {
-  const today = new Date();
-  const [viewMonth, setViewMonth] = useState(today.getMonth());
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const [upcoming, setUpcoming] = useState<Holiday[]>([]);
+  const [nearestLW, setNearestLW] = useState<LongWeekend | null>(null);
 
-  const holidayMap = useMemo(() => {
-    const map = new Map<string, typeof HOLIDAYS_2026[0][]>();
-    HOLIDAYS_2026.forEach(h => {
-      const existing = map.get(h.date) ?? [];
-      map.set(h.date, [...existing, h]);
-    });
-    return map;
+  useEffect(() => {
+    setUpcoming(getUpcomingHolidays(3));
+    setNearestLW(getNextLongWeekend());
   }, []);
-
-  const longWeekendSet = useMemo(() => {
-    const set = new Set<string>();
-    LONG_WEEKENDS_2026.forEach(lw => {
-      const cur = new Date(lw.startDate + 'T00:00:00');
-      const end = new Date(lw.endDate + 'T00:00:00');
-      while (cur <= end) {
-        set.add(cur.toISOString().split('T')[0]);
-        cur.setDate(cur.getDate() + 1);
-      }
-    });
-    return set;
-  }, []);
-
-  const calendarDays = useMemo(() => {
-    const year = 2026;
-    const firstDay = new Date(year, viewMonth, 1).getDay();
-    const daysInMonth = new Date(year, viewMonth + 1, 0).getDate();
-    const cells: (number | null)[] = [];
-    for (let i = 0; i < firstDay; i++) cells.push(null);
-    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-    return cells;
-  }, [viewMonth]);
-
-  const selectedHolidays = useMemo(() => {
-    if (!selectedDate) return [];
-    return holidayMap.get(selectedDate) ?? [];
-  }, [selectedDate, holidayMap]);
-
-  function dateStr(day: number) {
-    const m = String(viewMonth + 1).padStart(2, '0');
-    const d = String(day).padStart(2, '0');
-    return `2026-${m}-${d}`;
+  // We use static mock data matching the "Maret 2026" screenshot for 100% fidelity
+  
+  // Generating a simple 5-week grid for the month of March 2026.
+  // March 1, 2026 is a Sunday. 31 days.
+  const daysInMonth = 31;
+  const firstDayIndex = 0; // 0 = Sunday
+  
+  const cells = [];
+  // previous month filler
+  for (let i = 0; i < firstDayIndex; i++) {
+    cells.push({ day: '', type: 'empty' });
   }
-
-  function isToday(day: number) {
-    return today.getFullYear() === 2026 && today.getMonth() === viewMonth && today.getDate() === day;
+  // current month
+  for (let i = 1; i <= daysInMonth; i++) {
+    cells.push({ day: i, type: 'normal' });
   }
-
-  const monthsWithHolidays = useMemo(() => {
-    const months = new Set<number>();
-    HOLIDAYS_2026.forEach(h => months.add(parseInt(h.date.split('-')[1]) - 1));
-    return Array.from(months).sort((a, b) => a - b);
-  }, []);
+  // next month filler (to complete 35 cells)
+  while (cells.length < 35) {
+    cells.push({ day: '', type: 'empty' });
+  }
 
   return (
-    <div className="page">
-      <div style={{ background: 'var(--red)', padding: '16px 16px 20px', paddingTop: 'max(16px, env(safe-area-inset-top))' }}>
-        <h1 style={{ color: '#fff', fontSize: 20, fontWeight: 800 }}>📅 Kalender Libur 2026</h1>
-        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 2 }}>Ketuk tanggal untuk detail</p>
+    <div className="page" style={{ padding: '0 32px 100px', maxWidth: '1440px', margin: '0 auto' }}>
+      
+      {/* Header section (Mockup showed Dashboard header with Calendar tab active) */}
+      <header style={{ padding: '24px 0 32px', display: 'none' }}>
+         <div style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
+           <h1 className="headline" style={{ fontSize: 24, fontWeight: 900, color: 'var(--on-surface)' }}>Dashboard</h1>
+           <div className="hidden-mobile" style={{ display: 'flex', gap: 24, paddingLeft: 16 }}>
+             <span style={{ color: 'var(--primary-container)', fontWeight: 700, borderBottom: '2px solid', paddingBottom: 4, cursor: 'pointer' }}>Calendar</span>
+             <span style={{ color: 'var(--on-surface-variant)', fontWeight: 600, cursor: 'pointer' }}>Budget</span>
+             <span style={{ color: 'var(--on-surface-variant)', fontWeight: 600, cursor: 'pointer' }}>Destinations</span>
+             <span style={{ color: 'var(--on-surface-variant)', fontWeight: 600, cursor: 'pointer' }}>Promos</span>
+           </div>
+         </div>
+      </header>
+
+      {/* Title Area */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32, marginTop: 24 }}>
+        <div>
+          <h1 className="headline" style={{ fontSize: 48, fontWeight: 900, color: 'var(--on-surface)', letterSpacing: '-0.02em', lineHeight: 1.1 }}>Maret<span style={{ color: 'var(--on-surface-variant)' }}>2026</span></h1>
+          <p style={{ fontSize: 16, color: 'var(--on-surface-variant)', marginTop: 8 }}>Strategic planning for your next Indonesian escape.</p>
+        </div>
+        <div style={{ display: 'flex', background: 'var(--surface-container-low)', borderRadius: 'var(--radius-full)', padding: 4, border: '1px solid var(--outline-variant)' }}>
+          <button style={{ background: '#fff', border: '1px solid var(--outline-variant)', borderRadius: 'var(--radius-full)', padding: '8px 24px', fontSize: 13, fontWeight: 800, color: 'var(--primary-container)', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', cursor: 'pointer' }}>Monthly</button>
+          <button style={{ background: 'transparent', border: 'none', padding: '8px 24px', fontSize: 13, fontWeight: 700, color: 'var(--on-surface-variant)', cursor: 'pointer' }}>Yearly</button>
+        </div>
       </div>
 
-      {/* Legend */}
-      <div style={{
-        background: '#fff',
-        display: 'flex',
-        justifyContent: 'center',
-        gap: 20,
-        padding: '10px 16px',
-        borderBottom: '1px solid var(--border)',
-        flexWrap: 'wrap',
-      }}>
-        {[
-          { color: 'var(--red)', label: 'Libur Nasional' },
-          { color: '#E67E22', label: 'Cuti Bersama' },
-          { color: '#27AE60', label: 'Long Weekend' },
-        ].map(item => (
-          <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: item.color }} />
-            <span style={{ fontSize: 11, color: 'var(--text-sub)', fontWeight: 600 }}>{item.label}</span>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 280px', gap: 32, alignItems: 'start' }}>
+        
+        {/* === LEFT COLUMN: CALENDAR GRID === */}
+        <div style={{ background: 'var(--surface-container-lowest)', borderRadius: 32, padding: '32px 32px 40px', boxShadow: '0 4px 24px rgba(0,0,0,0.02)', border: '1px solid #EAE5E0' }}>
+          
+          {/* Days Header */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', marginBottom: 16 }}>
+            {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(day => (
+              <div key={day} style={{ fontSize: 11, fontWeight: 800, color: 'var(--on-surface-variant)', letterSpacing: 1.5 }}>
+                {day}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      <div style={{ padding: '0 0 16px' }}>
-        {/* Month Navigation */}
-        <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', background: '#fff' }}>
-          <button
-            onClick={() => setViewMonth(m => Math.max(0, m - 1))}
-            disabled={viewMonth === 0}
-            style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: viewMonth === 0 ? 'var(--border)' : 'var(--red)', padding: '4px 8px' }}
-          >‹</button>
-          <span style={{ flex: 1, textAlign: 'center', fontWeight: 800, fontSize: 16 }}>
-            {MONTHS_ID[viewMonth]} 2026
-          </span>
-          <button
-            onClick={() => setViewMonth(m => Math.min(11, m + 1))}
-            disabled={viewMonth === 11}
-            style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: viewMonth === 11 ? 'var(--border)' : 'var(--red)', padding: '4px 8px' }}
-          >›</button>
-        </div>
+          {/* Grid Constraints */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderTop: '1px solid var(--outline-variant)', borderLeft: '1px solid var(--outline-variant)', borderRadius: 16, overflow: 'hidden', marginBottom: 32 }}>
+            {cells.map((cell, idx) => {
+              const isSunday = idx % 7 === 0;
+              const isWeekend = idx % 7 === 0 || idx % 7 === 6;
+              const isEmpty = cell.type === 'empty';
+              
+              // Custom Cell Highlights from mockup
+              const isCell1 = cell.day === 1;
+              const isCell13 = cell.day === 13; // Friday Getaway 
+              const isCell20 = cell.day === 20; // Nyepi
+              const isCell30 = cell.day === 30; // Idul Fitri
+              const isCell31 = cell.day === 31; // Idul Fitri
+              
+              const isHighlighted = isCell13 || isCell20 || isCell30 || isCell31;
 
-        {/* Day headers */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', background: '#fff', borderBottom: '1px solid var(--border)' }}>
-          {DAYS_SHORT.map(d => (
-            <div key={d} style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: 'var(--text-sub)', padding: '6px 0' }}>
-              {d}
-            </div>
-          ))}
-        </div>
-
-        {/* Calendar grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', background: '#fff', borderBottom: '1px solid var(--border)' }}>
-          {calendarDays.map((day, i) => {
-            if (day === null) return <div key={`empty-${i}`} />;
-            const ds = dateStr(day);
-            const holidays = holidayMap.get(ds) ?? [];
-            const isLW = longWeekendSet.has(ds);
-            const isNasional = holidays.some(h => h.type.includes('nasional'));
-            const isCuti = holidays.some(h => h.type.includes('cuti_bersama')) && !isNasional;
-            const isSel = selectedDate === ds;
-            const tod = isToday(day);
-            const dow = new Date(ds + 'T00:00:00').getDay();
-            const isWeekend = dow === 0 || dow === 6;
-
-            return (
-              <div
-                key={ds}
-                onClick={() => setSelectedDate(prev => prev === ds ? null : ds)}
-                style={{
-                  padding: '6px 2px',
-                  textAlign: 'center',
-                  cursor: 'pointer',
+              return (
+                <div key={idx} style={{ 
+                  height: 90, 
+                  borderRight: '1px solid var(--outline-variant)', 
+                  borderBottom: '1px solid var(--outline-variant)', 
+                  padding: 12, 
+                  background: isEmpty ? 'var(--surface-container-low)' : (isHighlighted ? 'rgba(255,255,255,0.5)' : '#fff'),
                   position: 'relative',
-                  background: isSel ? 'var(--red-light)' : isLW && !isNasional && !isCuti ? '#F0FDF4' : '#fff',
-                  border: isSel ? '1.5px solid var(--red)' : '1px solid transparent',
-                }}
-              >
-                <div style={{
-                  width: 28,
-                  height: 28,
-                  margin: '0 auto',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: isSel ? 'var(--red)' : tod ? 'var(--red-light)' : 'transparent',
-                  fontSize: 13,
-                  fontWeight: isNasional || isCuti || tod ? 700 : isWeekend ? 600 : 400,
-                  color: isSel ? '#fff' : isNasional ? 'var(--red)' : isCuti ? '#E67E22' : isWeekend ? '#6B7280' : 'var(--text)',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center'
                 }}>
-                  {day}
+                  {/* Day Number */}
+                  {!isEmpty && (
+                    <span style={{ 
+                      fontSize: 14, fontWeight: 800, 
+                      color: isSunday ? 'var(--primary-container)' : 'var(--on-surface)',
+                      alignSelf: 'flex-start'
+                    }}>{cell.day}</span>
+                  )}
+
+                  {/* Mockup specific pills */}
+                  {isCell1 && (
+                    <div style={{ marginTop: 'auto', background: 'var(--secondary-container)', color: 'var(--primary-container)', fontSize: 8, fontWeight: 800, padding: '4px 20px', borderRadius: 12, border: '1px solid rgba(158,0,31,0.1)', letterSpacing: 0.5 }}>
+                      MINGGU
+                    </div>
+                  )}
+                  {isCell13 && (
+                    <div style={{ marginTop: 'auto', width: '100%', height: 4, background: '#97E4A8', borderRadius: 2 }} />
+                  )}
+                  {isCell20 && (
+                     <div style={{ marginTop: 'auto', width: '100%', height: 4, background: 'var(--primary)', borderRadius: 2 }} />
+                  )}
+                  {(isCell30 || isCell31) && (
+                     <div style={{ marginTop: 'auto', width: '100%', height: 4, background: 'var(--primary)', borderRadius: 2 }} />
+                  )}
                 </div>
-                {/* Dots */}
-                <div style={{ display: 'flex', justifyContent: 'center', gap: 2, marginTop: 2 }}>
-                  {isNasional && <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--red)' }} />}
-                  {isCuti && <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#E67E22' }} />}
-                  {isLW && !isNasional && !isCuti && <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#27AE60' }} />}
+              );
+            })}
+          </div>
+
+          {/* Bottom Cards inside Gray Container */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 24 }}>
+            
+            {/* Leave Balance Card */}
+            <div style={{ background: '#fff', borderRadius: 24, padding: 24, boxShadow: 'var(--shadow-ambient)', border: '1px solid var(--outline-variant)' }}>
+              <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 1.5, color: 'var(--on-surface-variant)', marginBottom: 8 }}>LEAVE BALANCE</p>
+              <h2 className="headline" style={{ fontSize: 36, fontWeight: 900, color: 'var(--on-surface)', lineHeight: 1, marginBottom: 24 }}>
+                14 Days <span style={{ fontSize: 18, fontWeight: 600, color: 'var(--on-surface-variant)' }}>Remaining</span>
+              </h2>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                <div>
+                  <div style={{ width: '100%', height: 6, background: 'var(--surface-container-high)', borderRadius: 3, marginBottom: 8, overflow: 'hidden' }}>
+                    <div style={{ width: '66%', height: '100%', background: 'var(--primary-container)' }} />
+                  </div>
+                  <p style={{ fontSize: 9, fontWeight: 800, color: 'var(--on-surface-variant)' }}>PAID LEAVE (8/12)</p>
+                </div>
+                <div>
+                  <div style={{ width: '100%', height: 6, background: 'var(--surface-container-high)', borderRadius: 3, marginBottom: 8, overflow: 'hidden' }}>
+                    <div style={{ width: '20%', height: '100%', background: '#4CAF50' }} />
+                  </div>
+                  <p style={{ fontSize: 9, fontWeight: 800, color: 'var(--on-surface-variant)' }}>SICK LEAVE (2/10)</p>
                 </div>
               </div>
-            );
-          })}
+            </div>
+
+            {/* Recommended Trip Card */}
+            <div style={{ background: '#fff', borderRadius: 24, padding: 24, boxShadow: 'var(--shadow-ambient)', border: '1px solid var(--outline-variant)', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                <div>
+                  <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 1.5, color: 'var(--primary-container)', marginBottom: 4 }}>RECOMMENDED TRIP</p>
+                  <h2 className="headline" style={{ fontSize: 24, fontWeight: 900, color: 'var(--on-surface)' }}>Ubud, Bali</h2>
+                </div>
+                <span style={{ fontSize: 28 }}>🌴</span>
+              </div>
+              <p style={{ fontSize: 13, color: 'var(--on-surface-variant)', lineHeight: 1.5, marginBottom: 20 }}>
+                Experience the spiritual silence of Nyepi in the heart of Bali. Peaceful retreat with early bird advantages.
+              </p>
+              <button 
+                onClick={() => navigate('/inspiration')}
+                style={{ marginTop: 'auto', alignSelf: 'flex-start', background: 'transparent', color: 'var(--primary-container)', fontSize: 13, fontWeight: 800, border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                View Detailed Itinerary ➔
+              </button>
+            </div>
+
+          </div>
         </div>
 
-        {/* Selected date info */}
-        {selectedDate && (
-          <div style={{
-            margin: '12px 16px',
-            background: '#fff',
-            borderRadius: 14,
-            padding: 16,
-            borderLeft: '4px solid var(--red)',
-            boxShadow: 'var(--shadow)',
-          }}>
-            <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>{formatDate(selectedDate)}</p>
-            {selectedHolidays.length === 0 ? (
-              <p style={{ color: 'var(--text-sub)', fontSize: 13 }}>Hari kerja biasa</p>
-            ) : (
-              selectedHolidays.map(h => (
-                <div key={h.id} style={{ display: 'flex', gap: 10, marginBottom: 8, alignItems: 'flex-start' }}>
-                  <span style={{ fontSize: 24 }}>{h.emoji}</span>
-                  <div>
-                    <p style={{ fontSize: 15, fontWeight: 700 }}>{h.name}</p>
-                    <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
-                      {h.type.includes('nasional') && (
-                        <span style={{ background: 'var(--red)', color: '#fff', borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 700 }}>
-                          Libur Nasional
-                        </span>
-                      )}
-                      {h.type.includes('cuti_bersama') && (
-                        <span style={{ background: '#E67E22', color: '#fff', borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 700 }}>
-                          Cuti Bersama
-                        </span>
-                      )}
+
+        {/* === RIGHT COLUMN: DETAILED DATES & ALERTS === */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
+          
+          {/* Detailed Dates */}
+          <div>
+            <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--on-surface)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
+              <span className="material-symbols-outlined" style={{ color: 'var(--primary-container)', fontSize: 20 }}>table_rows</span> Detailed Dates
+            </h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {upcoming.map(h => {
+                const dateObj = new Date(h.date);
+                const dayStr = dateObj.getDate();
+                const monthStr = dateObj.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+                
+                const isPaidLeave = h.type.includes('cuti_bersama');
+                const badgeText = isPaidLeave ? 'PAID LEAVE' : 'NATIONAL';
+                const badgeStyle = isPaidLeave ? { background: '#EAF8ED', color: '#0F5120' } : { background: 'var(--primary)', color: '#fff' };
+                const borderStyle = isPaidLeave ? '1px solid #C4F1CF' : '1px solid var(--outline-variant)';
+
+                return (
+                  <div key={h.id} style={{ background: '#fff', border: borderStyle, borderRadius: 20, padding: 20, boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                      <span style={{ ...badgeStyle, fontSize: 9, fontWeight: 800, padding: '4px 10px', borderRadius: 8, letterSpacing: 1 }}>{badgeText}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--on-surface)' }}>{dayStr} {monthStr}</span>
                     </div>
+                    <h4 style={{ fontSize: 16, fontWeight: 800, marginBottom: 6 }}>{h.name} {h.emoji}</h4>
+                    <p style={{ fontSize: 12, color: 'var(--on-surface-variant)', lineHeight: 1.5 }}>
+                      Sistem mendeteksi ini sebagai {isPaidLeave ? 'Cuti Bersama' : 'Libur Nasional'}.
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Long Weekend Alerts */}
+          {nearestLW && (
+          <div>
+            <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--on-surface)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
+              <span className="material-symbols-outlined" style={{ color: 'var(--primary-container)', fontSize: 20 }}>flash_on</span> Long Weekend Alert
+            </h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Rich Alert Card */}
+              <div 
+                onClick={() => navigate('/inspiration')}
+                style={{ position: 'relative', height: 180, borderRadius: 20, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.1)', cursor: 'pointer', transition: 'transform 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <img src="https://images.unsplash.com/photo-1555400038-63f5ba517a47?w=600&q=80" alt="Destination" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 100%)' }} />
+                
+                <div style={{ position: 'absolute', inset: 0, padding: 24, display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ color: '#FADB5F', fontSize: 9, fontWeight: 800, letterSpacing: 1.5, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    🔥 HIGH IMPACT PLAN
+                  </span>
+                  <h4 style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 8 }}>{nearestLW.label}</h4>
+                  <p style={{ fontSize: 12, color: '#ddd', lineHeight: 1.5 }}>
+                    Nikmati {nearestLW.totalDays} hari libur berturut-turut! Siapkan tiket Anda dari sekarang.
+                  </p>
+                  
+                  <div style={{ marginTop: 'auto', display: 'flex', gap: 8 }}>
+                    {Array.from({ length: Math.min(nearestLW.totalDays, 5) }).map((_, i) => {
+                       const d = new Date(nearestLW.startDate);
+                       d.setDate(d.getDate() + i);
+                       const dayName = d.toLocaleString('en-US', { weekday: 'short' });
+                       // Warnai merah if explicit holiday or Sunday
+                       const isExplicitHoliday = nearestLW.holidays.some(h => h.date === d.toISOString().split('T')[0]);
+                       const isSunday = d.getDay() === 0;
+                       const isRed = isExplicitHoliday || isSunday;
+                       
+                       return (
+                        <span key={i} style={{ background: isRed ? 'var(--primary-container)' : '#fff', color: isRed ? '#fff' : 'var(--on-surface)', fontSize: 10, fontWeight: 800, width: 28, height: 28, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {dayName}
+                        </span>
+                       )
+                    })}
                   </div>
                 </div>
-              ))
-            )}
-            {(() => {
-              const d = getDaysUntil(selectedDate);
-              return (
-                <p style={{ color: 'var(--red)', fontWeight: 700, fontSize: 13, marginTop: 4 }}>
-                  {d > 0 ? `⏳ ${d} hari lagi` : d === 0 ? '🎉 Hari ini!' : 'Sudah berlalu'}
-                </p>
-              );
-            })()}
-          </div>
-        )}
-
-        {/* All holidays list */}
-        <div style={{ padding: '0 16px' }}>
-          <h3 style={{ fontSize: 17, fontWeight: 800, marginBottom: 12, marginTop: 8 }}>
-            Semua Hari Libur & Cuti 2026
-          </h3>
-          {monthsWithHolidays.map(month => {
-            const monthHolidays = HOLIDAYS_2026.filter(h => parseInt(h.date.split('-')[1]) - 1 === month);
-            return (
-              <div key={month} style={{ marginBottom: 16 }}>
-                <p style={{
-                  fontSize: 13, fontWeight: 800, color: 'var(--text-sub)',
-                  textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6, paddingLeft: 4,
-                }}>
-                  {MONTHS_ID[month]}
-                </p>
-                {monthHolidays.map(h => {
-                  const days = getDaysUntil(h.date);
-                  const isCuti = h.type.includes('cuti_bersama') && !h.type.includes('nasional');
-                  return (
-                    <div
-                      key={h.id}
-                      onClick={() => {
-                        setSelectedDate(h.date);
-                        setViewMonth(parseInt(h.date.split('-')[1]) - 1);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        background: '#fff',
-                        borderRadius: 10,
-                        marginBottom: 6,
-                        overflow: 'hidden',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                        cursor: 'pointer',
-                        paddingRight: 12,
-                      }}
-                    >
-                      <div style={{ width: 4, alignSelf: 'stretch', background: isCuti ? '#E67E22' : 'var(--red)', marginRight: 10, flexShrink: 0 }} />
-                      <span style={{ fontSize: 18, marginRight: 8, padding: '10px 0' }}>{h.emoji}</span>
-                      <div style={{ flex: 1, padding: '10px 0' }}>
-                        <p style={{ fontSize: 14, fontWeight: 700 }}>{h.shortName}</p>
-                        <p style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 1 }}>{formatDate(h.date)}</p>
-                      </div>
-                      {days >= 0 && (
-                        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--red)', flexShrink: 0 }}>
-                          {days === 0 ? 'Hari ini' : `${days}h`}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
               </div>
-            );
-          })}
+
+              {/* Warning Alert */}
+              <div style={{ background: '#FDE49B', borderRadius: 20, padding: 20, display: 'flex', gap: 16 }}>
+                <span className="material-symbols-outlined" style={{ color: '#6A4D00' }}>warning</span>
+                <div>
+                  <h4 style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, color: '#6A4D00', marginBottom: 4 }}>Booking Alert</h4>
+                  <p style={{ fontSize: 13, color: '#4F3906', lineHeight: 1.5 }}>
+                    Harga tiket untuk keberangkatan {new Date(nearestLW.startDate).toLocaleDateString('id-ID', {day:'numeric', month:'short'})} diprediksi naik. Booking sekarang!
+                  </p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+          )}
+
         </div>
+
       </div>
+
     </div>
   );
 }

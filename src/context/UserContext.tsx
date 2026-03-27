@@ -19,6 +19,7 @@ interface UserContextType {
   authState: AuthState;
   user: UserProfile | null;
   login: (name: string) => void;
+  loginWithGoogle: (profile: { name: string; email: string; photo?: string }) => void;
   logout: () => void;
   savePreferences: (prefs: Partial<UserProfile>) => void;
   completeOnboarding: (prefs: Partial<UserProfile>) => void;
@@ -59,6 +60,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     setAuthState('onboarding');
   }
 
+  function loginWithGoogle(profile: { name: string; email: string; photo?: string }) {
+    const userProfile: UserProfile = { name: profile.name, email: profile.email, photo: profile.photo };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(userProfile));
+    setUser(userProfile);
+    setAuthState('onboarding');
+  }
+
   function logout() {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(PREFS_KEY);
@@ -80,7 +88,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <UserContext.Provider value={{ authState, user, login, logout, savePreferences, completeOnboarding }}>
+    <UserContext.Provider value={{ authState, user, login, loginWithGoogle, logout, savePreferences, completeOnboarding }}>
       {children}
     </UserContext.Provider>
   );

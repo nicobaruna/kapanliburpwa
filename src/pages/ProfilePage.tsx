@@ -29,32 +29,32 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="page">
-      <div style={{ background: 'var(--red)', padding: '16px 16px 20px', paddingTop: 'max(16px, env(safe-area-inset-top))' }}>
-        <h1 style={{ color: '#fff', fontSize: 20, fontWeight: 800 }}>👤 Profil</h1>
-        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 2 }}>Preferensi liburanmu</p>
-      </div>
+    <div className="page" style={{ padding: '0 0 100px 0' }}>
+      <header className="page-header" style={{ paddingBottom: '20px' }}>
+        <h1 className="headline" style={{ fontSize: 24 }}>👤 Profil Pengguna</h1>
+        <p>Sesuaikan preferensi pencarianmu.</p>
+      </header>
 
-      <div style={{ padding: '16px' }}>
-        {/* User Info */}
-        <div className="card" style={{ margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div className="responsive-grid" style={{ padding: '16px 24px', maxWidth: 640, margin: '0 auto' }}>
+        <div className="card" style={{ margin: 0, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{
-            width: 56, height: 56, borderRadius: '50%',
-            background: 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 24, fontWeight: 800, color: '#fff', flexShrink: 0,
+            width: 64, height: 64, borderRadius: '50%',
+            background: 'linear-gradient(135deg, var(--primary), var(--primary-container))',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 28, fontWeight: 800, color: '#fff', flexShrink: 0,
+            boxShadow: 'var(--shadow-ambient)'
           }}>
             {user?.name?.charAt(0).toUpperCase()}
           </div>
           <div>
-            <p style={{ fontSize: 18, fontWeight: 800 }}>{user?.name}</p>
-            <p style={{ fontSize: 12, color: 'var(--text-sub)' }}>Member KapanLibur 2026</p>
+            <p className="headline" style={{ fontSize: 20 }}>{user?.name}</p>
+            <p style={{ fontSize: 14, color: 'var(--on-surface-variant)' }}>KapanLibur Member</p>
           </div>
         </div>
 
-        {/* Vacation Type */}
-        <div className="card" style={{ margin: '0 0 12px' }}>
-          <p style={{ fontSize: 15, fontWeight: 800, marginBottom: 12 }}>Jenis Liburan Favoritmu</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div className="card" style={{ margin: 0, marginBottom: 24 }}>
+          <h3 className="headline" style={{ fontSize: 16, marginBottom: 16 }}>Jenis Liburan Favorit</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             {VACATION_TYPES.map(vt => {
               const selected = editType === vt.value;
               return (
@@ -62,15 +62,16 @@ export default function ProfilePage() {
                   key={vt.value}
                   onClick={() => setEditType(vt.value)}
                   style={{
-                    background: selected ? 'var(--red-light)' : 'var(--bg)',
-                    border: `2px solid ${selected ? 'var(--red)' : 'var(--border)'}`,
-                    borderRadius: 12, padding: '12px',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
-                    transition: 'all 0.15s',
+                    background: selected ? 'var(--surface)' : 'var(--surface-container-low)',
+                    border: `2px solid ${selected ? 'var(--primary)' : 'transparent'}`,
+                    outline: selected ? 'none' : '1px solid var(--outline-variant)',
+                    borderRadius: 'var(--radius-md)', padding: '16px',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12,
+                    transition: 'all 0.2s',
                   }}
                 >
-                  <span style={{ fontSize: 22 }}>{vt.emoji}</span>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: selected ? 'var(--red)' : 'var(--text)' }}>
+                  <span style={{ fontSize: 24 }}>{vt.emoji}</span>
+                  <span style={{ fontSize: 15, fontWeight: selected ? 800 : 600, color: selected ? 'var(--primary)' : 'var(--on-surface)' }}>
                     {vt.label}
                   </span>
                 </button>
@@ -79,10 +80,9 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Vacation Style */}
-        <div className="card" style={{ margin: '0 0 12px' }}>
-          <p style={{ fontSize: 15, fontWeight: 800, marginBottom: 12 }}>Gaya Liburanmu</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="card" style={{ margin: 0, marginBottom: 24 }}>
+          <h3 className="headline" style={{ fontSize: 16, marginBottom: 16 }}>Gaya Liburan</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {VACATION_STYLES.map(vs => {
               const selected = editStyle === vs.value;
               return (
@@ -90,56 +90,44 @@ export default function ProfilePage() {
                   key={vs.value}
                   onClick={() => setEditStyle(vs.value)}
                   style={{
-                    background: selected ? 'var(--red-light)' : 'var(--bg)',
-                    border: `2px solid ${selected ? 'var(--red)' : 'var(--border)'}`,
-                    borderRadius: 12, padding: '12px 14px',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12,
-                    transition: 'all 0.15s',
+                    background: selected ? 'var(--surface)' : 'var(--surface-container-low)',
+                    border: `2px solid ${selected ? 'var(--primary)' : 'transparent'}`,
+                    outline: selected ? 'none' : '1px solid var(--outline-variant)',
+                    borderRadius: 'var(--radius-md)', padding: '16px 20px',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16,
+                    transition: 'all 0.2s',
                   }}
                 >
-                  <span style={{ fontSize: 24 }}>{vs.emoji}</span>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: selected ? 'var(--red)' : 'var(--text)', flex: 1, textAlign: 'left' }}>
+                  <span style={{ fontSize: 28 }}>{vs.emoji}</span>
+                  <span className="headline" style={{ fontSize: 16, color: selected ? 'var(--primary)' : 'var(--on-surface)', flex: 1, textAlign: 'left' }}>
                     {vs.label}
                   </span>
-                  {selected && <span style={{ color: 'var(--red)', fontSize: 18 }}>✓</span>}
+                  {selected && <span style={{ color: 'var(--primary)', fontSize: 20 }}>✓</span>}
                 </button>
               );
             })}
           </div>
         </div>
 
-        <button
-          className="btn btn-primary btn-full"
-          onClick={handleSave}
-          disabled={!editType || !editStyle}
-          style={{ opacity: editType && editStyle ? 1 : 0.5, marginBottom: 12 }}
-        >
-          {saved ? '✅ Tersimpan!' : 'Simpan Preferensi'}
+        <button className="btn btn-primary btn-full" onClick={handleSave} disabled={!editType || !editStyle} style={{ marginBottom: 24 }}>
+          {saved ? '✅ Preferensi Tersimpan' : 'Simpan Preferensi'}
         </button>
 
-        <div className="divider" />
-
-        {/* App Info */}
-        <div style={{ padding: '8px 0' }}>
+        <div className="card" style={{ margin: 0, background: 'var(--surface-container-low)', boxShadow: 'none' }}>
           {[
-            { label: 'Versi App', value: '1.0.0 PWA' },
+            { label: 'Versi App', value: '2.0.0 (Stitch Sync)' },
             { label: 'Data Libur', value: 'BI 2026' },
-            { label: 'Total Libur', value: '17 Nasional + 8 Cuti' },
+            { label: 'Desain', value: 'Editorial Vitality' },
           ].map(item => (
-            <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
-              <span style={{ fontSize: 14, color: 'var(--text-sub)' }}>{item.label}</span>
-              <span style={{ fontSize: 14, fontWeight: 600 }}>{item.value}</span>
+            <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid var(--outline-variant)' }}>
+              <span style={{ fontSize: 14, color: 'var(--on-surface-variant)' }}>{item.label}</span>
+              <span style={{ fontSize: 14, fontWeight: 700 }}>{item.value}</span>
             </div>
           ))}
+          <button className="btn btn-tertiary btn-full" onClick={logout} style={{ marginTop: 16, border: '1px solid var(--primary)' }}>
+            Daftar Keluar
+          </button>
         </div>
-
-        <button
-          className="btn btn-secondary btn-full"
-          onClick={logout}
-          style={{ marginTop: 24 }}
-        >
-          Keluar
-        </button>
       </div>
     </div>
   );

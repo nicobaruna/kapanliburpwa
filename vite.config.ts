@@ -3,6 +3,26 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  server: {
+    proxy: {
+      '/api/serp': {
+        target: 'https://serpapi.com',
+        changeOrigin: true,
+        secure: false,
+        timeout: 60000,
+        proxyTimeout: 60000,
+        headers: {
+          Connection: 'keep-alive',
+        },
+        rewrite: (path) => path.replace(/^\/api\/serp/, ''),
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('proxy error', err);
+          });
+        }
+      }
+    }
+  },
   plugins: [
     react(),
     VitePWA({

@@ -5,7 +5,11 @@
       "Bash(node -e \"const sharp=require\\(''sharp''\\); console.log\\(''sharp ok''\\)\")",
       "Bash(node -e \":*)",
       "Bash(npm run:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(npm install:*)",
+      "Bash(python3:*)",
+      "Bash(where node:*)",
+      "Bash(node:*)"
     ]
   }
 }

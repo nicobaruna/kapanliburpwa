@@ -1,11 +1,10 @@
 import { NavLink } from 'react-router-dom';
 
 const TABS = [
-  { to: '/', label: 'Beranda', emoji: '🏠' },
-  { to: '/kalender', label: 'Kalender', emoji: '📅' },
-  { to: '/long-weekend', label: 'Long Weekend', emoji: '🏖️' },
-  { to: '/finansial', label: 'Finansial', emoji: '💰' },
-  { to: '/profil', label: 'Profil', emoji: '👤' },
+  { to: '/dashboard', label: 'Dashboard', emoji: '🏠' },
+  { to: '/calendar', label: 'Kalender', emoji: '📅' },
+  { to: '/inspiration', label: 'Inspirasi', emoji: '🏝️' },
+  { to: '/profile', label: 'Profil', emoji: '👤' },
 ];
 
 export default function BottomNav() {
@@ -13,56 +12,70 @@ export default function BottomNav() {
     <nav style={{
       position: 'fixed',
       bottom: 0,
-      left: '50%',
-      transform: 'translateX(-50%)',
+      left: '0',
       width: '100%',
-      maxWidth: 'var(--max-w)',
-      background: 'var(--white)',
-      borderTop: '1px solid var(--border)',
+      background: 'rgba(253, 249, 245, 0.9)',
+      backdropFilter: 'blur(10px)',
+      WebkitBackdropFilter: 'blur(10px)',
+      borderTop: 'none',
       display: 'flex',
       zIndex: 100,
-      boxShadow: '0 -2px 12px rgba(0,0,0,0.07)',
-    }}>
+      boxShadow: 'var(--shadow-ambient)',
+      paddingBottom: 'env(safe-area-inset-bottom, 16px)'
+    }} className="bottom-nav-container">
       {TABS.map(tab => (
         <NavLink
           key={tab.to}
           to={tab.to}
-          end={tab.to === '/'}
           style={({ isActive }) => ({
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '8px 4px 10px',
+            padding: '12px 4px 8px',
             textDecoration: 'none',
-            color: isActive ? 'var(--red)' : 'var(--text-sub)',
+            color: isActive ? 'var(--primary)' : 'var(--on-surface-variant)',
             fontWeight: isActive ? 700 : 500,
-            fontSize: 11,
-            gap: 3,
+            fontSize: 12,
+            fontFamily: 'Manrope, sans-serif',
+            gap: 4,
             position: 'relative',
+            transition: 'color 0.2s',
           })}
         >
           {({ isActive }) => (
             <>
-              <span style={{ fontSize: isActive ? 22 : 18, opacity: isActive ? 1 : 0.6 }}>
+              <span style={{ 
+                fontSize: isActive ? 24 : 20, 
+                opacity: isActive ? 1 : 0.6,
+                transform: isActive ? 'translateY(-2px)' : 'none',
+                transition: 'transform 0.2s, opacity 0.2s'
+              }}>
                 {tab.emoji}
               </span>
               <span>{tab.label}</span>
               {isActive && (
                 <span style={{
                   position: 'absolute',
-                  bottom: 6,
-                  width: 4,
-                  height: 4,
-                  borderRadius: '50%',
-                  background: 'var(--red)',
+                  bottom: 2,
+                  width: 24,
+                  height: 3,
+                  borderRadius: '3px',
+                  background: 'linear-gradient(135deg, var(--primary), var(--primary-container))',
                 }} />
               )}
             </>
           )}
         </NavLink>
       ))}
+      <style>{`
+        @media (min-width: 1024px) {
+          .bottom-nav-container {
+            display: none !important;
+          }
+        }
+      `}</style>
     </nav>
   );
 }
