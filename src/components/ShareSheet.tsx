@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { formatCurrency } from '../services/api';
 import type { RecommendationResult } from '../services/api';
 
@@ -113,55 +113,61 @@ export default function ShareSheet({ dest, onClose }: Props) {
       <div
         style={{
           position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 10001,
-          background: '#fff', borderRadius: '24px 24px 0 0',
-          padding: '0 0 32px',
-          animation: 'slideUp 0.28s cubic-bezier(0.32,0.72,0,1)',
+          background: 'var(--surface-container-lowest)', 
+          borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
+          padding: '0 0 48px',
+          animation: 'slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
           maxWidth: 640, margin: '0 auto',
+          boxShadow: '0 -10px 40px rgba(0,0,0,0.1)'
         }}
       >
         {/* Handle */}
-        <div style={{ width: 40, height: 4, background: '#e0e0e0', borderRadius: 2, margin: '12px auto 20px' }} />
+        <div style={{ width: 44, height: 5, background: 'var(--outline-variant)', borderRadius: 'var(--radius-full)', margin: '16px auto 28px', opacity: 0.5 }} />
 
-        {/* Destination preview */}
-        <div style={{ padding: '0 20px 20px', borderBottom: '1px solid var(--surface-container)' }}>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        {/* Destination preview - Use Tonal Layering instead of border */}
+        <div style={{ padding: '0 24px 24px' }}>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center', background: 'var(--surface-container-low)', padding: 16, borderRadius: 'var(--radius-md)' }}>
             <img
               src={dest.image} alt={dest.name}
-              style={{ width: 60, height: 60, borderRadius: 12, objectFit: 'cover', flexShrink: 0 }}
+              style={{ width: 72, height: 72, borderRadius: 'var(--radius-default)', objectFit: 'cover', flexShrink: 0 }}
             />
-            <div>
-              <p style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontWeight: 800, fontSize: 16, marginBottom: 2 }}>{dest.name}</p>
-              <p style={{ fontSize: 13, color: 'var(--on-surface-variant)', marginBottom: 3 }}>{dest.location}</p>
-              <p style={{ fontSize: 12, color: 'var(--primary-container)', fontWeight: 700 }}>Estimasi {formatCurrency(dest.estTotalCost)}</p>
+            <div style={{ flex: 1 }}>
+              <p className="headline" style={{ fontWeight: 800, fontSize: 18, marginBottom: 2 }}>{dest.name}</p>
+              <p style={{ fontSize: 14, color: 'var(--on-surface-variant)', marginBottom: 4 }}>{dest.location}</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ background: 'rgba(158,0,31,0.1)', color: 'var(--primary)', padding: '4px 10px', borderRadius: 8, fontSize: 11, fontWeight: 900, letterSpacing: 0.5 }}>BEST MATCH</span>
+                <p style={{ fontSize: 13, color: 'var(--on-surface-variant)', fontWeight: 700 }}>{formatCurrency(dest.estTotalCost)}</p>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Platform buttons */}
-        <div style={{ padding: '24px 20px 0', display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div style={{ padding: '8px 24px 0', display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap' }}>
           {PLATFORMS.map(p => {
             const isIg = p.id === 'instagram';
             const url = p.getUrl ? p.getUrl(shareText, shareUrl) : null;
 
             const circleStyle = {
-              width: 56, height: 56, borderRadius: '50%',
+              width: 60, height: 60, borderRadius: '50%',
               background: p.bg, display: 'flex', alignItems: 'center',
-              justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              justifyContent: 'center', boxShadow: 'var(--shadow-ambient)',
+              transition: 'transform 0.2s',
             };
 
             return (
-              <div key={p.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 }}>
+              <div key={p.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }} className="hover-scale">
                 {isIg ? (
                   <button onClick={copyLink} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                     <div style={circleStyle}>{p.icon}</div>
                   </button>
                 ) : (
-                  <a href={url!} target="_blank" rel="noopener noreferrer" onClick={onClose}>
+                  <a href={url!} target="_blank" rel="noopener noreferrer" onClick={onClose} style={{ textDecoration: 'none' }}>
                     <div style={circleStyle}>{p.icon}</div>
                   </a>
                 )}
-                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--on-surface-variant)' }}>
-                  {isIg && copied ? '✅ Link disalin!' : p.name}
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--on-surface-variant)', letterSpacing: 0.2 }}>
+                  {isIg && copied ? 'Copied!' : p.name}
                 </span>
               </div>
             );
@@ -169,16 +175,17 @@ export default function ShareSheet({ dest, onClose }: Props) {
         </div>
 
         {/* Copy link row */}
-        <div style={{ margin: '20px 20px 0', display: 'flex', gap: 10, alignItems: 'center', background: 'var(--surface-container-low)', borderRadius: 12, padding: '11px 14px' }}>
-          <span className="material-symbols-outlined" style={{ fontSize: 18, color: 'var(--on-surface-variant)', flexShrink: 0 }}>link</span>
-          <span style={{ fontSize: 12, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--on-surface-variant)' }}>
+        <div style={{ margin: '32px 24px 0', display: 'flex', gap: 12, alignItems: 'center', background: 'var(--surface-container-low)', borderRadius: 'var(--radius-md)', padding: '16px 20px' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 20, color: 'var(--on-surface-variant)', opacity: 0.6 }}>link</span>
+          <span style={{ fontSize: 13, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--on-surface-variant)', fontWeight: 600 }}>
             {shareUrl}
           </span>
           <button
             onClick={copyLink}
-            style={{ background: 'var(--primary-container)', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
+            className="btn btn-primary"
+            style={{ padding: '8px 24px', fontSize: 13, borderRadius: 'var(--radius-full)' }}
           >
-            {copied ? '✅ Tersalin' : '📋 Salin'}
+            {copied ? 'Tersalin' : 'Salin Link'}
           </button>
         </div>
       </div>

@@ -9,7 +9,10 @@
       "Bash(npm install:*)",
       "Bash(python3:*)",
       "Bash(where node:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(python -m json.tool)",
+      "Read(//c/Users/CRPAdmin/.claude/**)",
+      "Skill(update-config)"
     ]
   }
 }

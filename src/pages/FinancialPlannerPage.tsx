@@ -28,12 +28,12 @@ function Spinner() {
   return (
     <span style={{
       display: 'inline-block',
-      width: 16,
-      height: 16,
-      border: '2px solid var(--outline-variant)',
+      width: 24,
+      height: 24,
+      border: '4px solid var(--surface-container-high)',
       borderTopColor: 'var(--primary)',
-      borderRadius: '50%',
-      animation: 'spin 0.7s linear infinite',
+      borderRadius: 'var(--radius-full)',
+      animation: 'spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite',
       flexShrink: 0,
     }} />
   );
@@ -66,7 +66,6 @@ export default function FinancialPlannerPage() {
       const r = planTrip({ budget, people, days, origin, style } as TripInput);
       setResult(r);
 
-      // Fetch inspiration recommendations factoring in people, days, and style
       try {
         const recs = await getRecommendations(budget, people, days, style);
         setInspirationResults(recs);
@@ -88,7 +87,6 @@ export default function FinancialPlannerPage() {
   function handleSearch() {
     const budget = parseRp(budgetStr);
     if (budget < 500000) return;
-    // Sync budget to localStorage so InspirationPage stays in sync
     localStorage.setItem('kapanlibur_budget', budget.toString());
     setPhase('loading');
     setStepsDone(0);
@@ -98,88 +96,101 @@ export default function FinancialPlannerPage() {
 
   const originLabel = ORIGINS.find(o => o.id === origin)?.label ?? origin;
 
-  // ── FORM ────────────────────────────────────────────────────────────────────
+  // ── FORM SHIFTED TO EDITORIAL STYLE ─────────────────────────────────────────
   if (phase === 'form') {
     return (
-      <div className="page" style={{ padding: '0 0 100px 0' }}>
-        <header className="page-header" style={{ paddingBottom: '20px' }}>
-          <h1 className="headline" style={{ fontSize: 24 }}>💰 Perencana Budget</h1>
-          <p>Hitung budget tiket & hotel liburanmu</p>
+      <div className="page page-container" style={{ paddingBottom: '120px', background: 'var(--surface)' }}>
+        <header style={{ padding: 'var(--spacing-16) 0 var(--spacing-6)', textAlign: 'center' }}>
+          <h1 className="headline" style={{ fontSize: 44, fontWeight: 900, lineHeight: 1.1, letterSpacing: -2 }}>
+            Budget Planner
+          </h1>
+          <p style={{ fontSize: 17, color: 'var(--on-surface-variant)', marginTop: 12, opacity: 0.8, fontWeight: 600 }}>
+             Personalisasi liburan impian sesuai anggaranmu.
+          </p>
         </header>
 
-        <div className="responsive-grid" style={{ padding: '16px 24px' }}>
-          <div className="card" style={{ margin: '0 auto', maxWidth: 640, width: '100%' }}>
-            <div className="form-group">
-              <label className="form-label">Kota Asal🛫</label>
-              <select className="form-select" value={origin} onChange={e => setOrigin(e.target.value)}>
-                {ORIGINS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
-              </select>
-            </div>
+        <div style={{ maxWidth: 640, margin: '0 auto', background: 'var(--surface-container-low)', borderRadius: 'var(--radius-xl)', padding: 48, boxShadow: 'none' }}>
+          <div className="form-group">
+            <label className="form-label" style={{ fontSize: 13, fontWeight: 900, letterSpacing: 1.5, color: 'var(--on-surface-variant)' }}>KOTA ASAL 🛫</label>
+            <select 
+              className="form-select" 
+              value={origin} 
+              onChange={e => setOrigin(e.target.value)} 
+              style={{ padding: '20px 24px', fontSize: 16, background: 'var(--surface-container-highest)', border: 'none', borderRadius: 'var(--radius-md)', fontWeight: 800 }}
+            >
+              {ORIGINS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+            </select>
+          </div>
 
+          <div className="form-group">
+            <label className="form-label" style={{ fontSize: 13, fontWeight: 900, letterSpacing: 1.5, color: 'var(--on-surface-variant)' }}>TOTAL BUDGET MAKSIMAL (Rp)</label>
+            <input
+              className="form-input"
+              type="text"
+              inputMode="numeric"
+              placeholder="Misal: 5.000.000"
+              value={budgetStr}
+              onChange={e => setBudgetStr(formatInput(e.target.value))}
+              style={{ padding: '20px 24px', fontSize: 24, fontWeight: 900, background: 'var(--surface-container-highest)', border: 'none', borderRadius: 'var(--radius-md)', color: 'var(--primary)' }}
+            />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
             <div className="form-group">
-              <label className="form-label">Total Budget Maksimal (Rp)</label>
+              <label className="form-label" style={{ fontSize: 13, fontWeight: 900, letterSpacing: 1.5, color: 'var(--on-surface-variant)' }}>JUMLAH ORANG 👥</label>
               <input
                 className="form-input"
-                type="text"
-                inputMode="numeric"
-                placeholder="Misal: 5.000.000"
-                value={budgetStr}
-                onChange={e => setBudgetStr(formatInput(e.target.value))}
+                type="number"
+                min={1} max={10}
+                value={people}
+                onChange={e => setPeople(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
+                style={{ padding: '20px 24px', fontSize: 16, fontWeight: 800, background: 'var(--surface-container-highest)', border: 'none', borderRadius: 'var(--radius-md)' }}
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <div className="form-group">
-                <label className="form-label">Jumlah Orang 👥</label>
-                <input
-                  className="form-input"
-                  type="number"
-                  min={1} max={10}
-                  value={people}
-                  onChange={e => setPeople(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Durasi (Hari) ⏳</label>
-                <input
-                  className="form-input"
-                  type="number"
-                  min={1} max={14}
-                  value={days}
-                  onChange={e => setDays(Math.max(1, Math.min(14, parseInt(e.target.value) || 1)))}
-                />
-              </div>
+            <div className="form-group">
+              <label className="form-label" style={{ fontSize: 13, fontWeight: 900, letterSpacing: 1.5, color: 'var(--on-surface-variant)' }}>DURASI (HARI) ⏳</label>
+              <input
+                className="form-input"
+                type="number"
+                min={1} max={14}
+                value={days}
+                onChange={e => setDays(Math.max(1, Math.min(14, parseInt(e.target.value) || 1)))}
+                style={{ padding: '20px 24px', fontSize: 16, fontWeight: 800, background: 'var(--surface-container-highest)', border: 'none', borderRadius: 'var(--radius-md)' }}
+              />
             </div>
-
-            <div className="form-group" style={{ marginBottom: 32 }}>
-              <label className="form-label">Gaya Liburan 🏕️</label>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {([['hemat', '💰 Hemat'], ['balance', '⚖️ Seimbang'], ['luxury', '✨ Luxury']] as [TripStyle, string][]).map(([val, lbl]) => (
-                  <button
-                    key={val}
-                    onClick={() => setStyle(val)}
-                    style={{
-                      flex: 1, minWidth: 100, padding: '12px 8px', borderRadius: 'var(--radius-md)',
-                      border: `2px solid ${style === val ? 'var(--primary)' : 'transparent'}`,
-                      background: style === val ? 'var(--surface-container-highest)' : 'var(--surface-container-low)',
-                      color: style === val ? 'var(--primary)' : 'var(--on-surface-variant)',
-                      fontWeight: 700, fontSize: 13, cursor: 'pointer', transition: 'all 0.2s',
-                    }}
-                  >{lbl}</button>
-                ))}
-              </div>
-            </div>
-
-            <button
-              className="btn btn-primary btn-full"
-              onClick={handleSearch}
-              disabled={!budgetStr || parseRp(budgetStr) < 500000}
-              style={{ opacity: budgetStr && parseRp(budgetStr) >= 500000 ? 1 : 0.5 }}
-            >
-              🔍 Cari Rekomendasi Destinasi
-            </button>
           </div>
+
+          <div className="form-group" style={{ marginBottom: 48 }}>
+            <label className="form-label" style={{ fontSize: 13, fontWeight: 900, letterSpacing: 1.5, color: 'var(--on-surface-variant)' }}>GAYA LIBURAN 🏕️</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+              {([['hemat', '💰 Hemat'], ['balance', '⚖️ Seimbang'], ['luxury', '✨ Luxury']] as [TripStyle, string][]).map(([val, lbl]) => (
+                <button
+                  key={val}
+                  onClick={() => setStyle(val)}
+                  style={{
+                    padding: '16px 8px', borderRadius: 'var(--radius-md)',
+                    border: 'none',
+                    background: style === val ? 'var(--primary)' : 'var(--surface-container-highest)',
+                    color: style === val ? '#fff' : 'var(--on-surface-variant)',
+                    fontWeight: 900, fontSize: 12, cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: style === val ? 'var(--shadow-hover)' : 'none',
+                    letterSpacing: 0.2
+                  }}
+                  className="hover-scale"
+                >{lbl.toUpperCase()}</button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            className="btn btn-primary btn-full shadow-lg hover-scale"
+            onClick={handleSearch}
+            disabled={!budgetStr || parseRp(budgetStr) < 500000}
+            style={{ padding: 24, fontSize: 18, fontWeight: 900, letterSpacing: 0.5 }}
+          >
+            CARI REKOMENDASI DESTINASI ➔
+          </button>
         </div>
       </div>
     );
@@ -188,247 +199,235 @@ export default function FinancialPlannerPage() {
   // ── LOADING & RESULT ────────────────────────────────────────────────────────
   if (phase === 'loading' || (phase === 'result' && result)) {
     return (
-      <div className="page" style={{ padding: '0 0 100px 0' }}>
-        <header className="page-header" style={{ paddingBottom: '20px' }}>
-          <h1 className="headline" style={{ fontSize: 24 }}>💰 Perencana Budget</h1>
-          <p>{phase === 'loading' ? 'Sedang menghitung rencana...' : 'Rekomendasi destinasi liburanmu'}</p>
+      <div className="page page-container" style={{ paddingBottom: '120px', background: 'var(--surface)' }}>
+        <header style={{ padding: 'var(--spacing-16) 0 var(--spacing-6)', textAlign: 'center' }}>
+          <h1 className="headline" style={{ fontSize: 44, fontWeight: 900, lineHeight: 1.1, letterSpacing: -2 }}>
+            Budget Planner
+          </h1>
+          <p style={{ fontSize: 17, color: 'var(--on-surface-variant)', marginTop: 12, opacity: 0.8, fontWeight: 600 }}>
+            {phase === 'loading' ? 'Sedang meramu rencana terbaik untukmu...' : 'Hasil analisis budget & destinasi terbaik.'}
+          </p>
         </header>
 
         {phase === 'loading' && (
-          <div className="responsive-grid" style={{ padding: '16px 24px' }}>
-            <div className="card" style={{ margin: '0 auto', maxWidth: 640, width: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {[
-                { num: 1, title: 'Cek Tiket Transportasi', desc: `Mencari opsi dari ${originLabel}...` },
-                { num: 2, title: 'Cari Penginapan', desc: 'Mencocokkan gaya menginap...' },
-                { num: 3, title: 'Menghitung Biaya', desc: 'Makan, wisata, dan transportasi...' },
-              ].map(step => {
-                const done = stepsDone >= step.num;
-                const active = stepsDone === step.num - 1;
-                return (
-                  <div key={step.num} style={{
-                    display: 'flex', alignItems: 'center', gap: 16, padding: 16,
-                    background: 'var(--surface-container-low)', borderRadius: 'var(--radius-md)',
-                    opacity: done || active ? 1 : 0.45, transition: 'opacity 0.3s'
-                  }}>
-                    {done ? <span style={{ fontSize: 24 }}>✅</span> : active ? <Spinner /> : <div style={{ width: 16 }} />}
-                    <div>
-                      <p className="headline" style={{ fontSize: 16 }}>{step.title}</p>
-                      <p style={{ fontSize: 13, color: 'var(--on-surface-variant)', marginTop: 2 }}>{step.desc}</p>
-                    </div>
+          <div style={{ maxWidth: 640, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
+            {[
+              { num: 1, title: 'Cek Tiket Transportasi', desc: `Mencari opsi penerbangan dari ${originLabel}...` },
+              { num: 2, title: 'Kurasi Penginapan', desc: 'Mencocokkan akomodasi dengan gaya liburanmu...' },
+              { num: 3, title: 'Analisis Biaya Wisata', desc: 'Menghitung estimasi harian tiket & kuliner...' },
+            ].map(step => {
+              const done = stepsDone >= step.num;
+              const active = stepsDone === step.num - 1;
+              return (
+                <div key={step.num} style={{
+                  display: 'flex', alignItems: 'center', gap: 32, padding: 40,
+                  background: 'var(--surface-container-low)', borderRadius: 'var(--radius-xl)',
+                  opacity: done || active ? 1 : 0.3, transition: 'all 0.4s ease',
+                  position: 'relative', overflow: 'hidden'
+                }} className={active ? "hover-scale" : ""}>
+                   {active && <div style={{ position: 'absolute', inset: 0, opacity: 0.05, background: 'var(--primary)', animation: 'pulse 1.5s infinite' }} />}
+                  <div style={{ width: 64, height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-container-highest)', borderRadius: 'var(--radius-full)' }}>
+                    {done ? <span style={{ fontSize: 36 }}>✅</span> : active ? <Spinner /> : <div style={{ width: 24, height: 24, borderRadius: 12, background: 'var(--outline-variant)', opacity: 0.3 }} />}
                   </div>
-                );
-              })}
-            </div>
+                  <div style={{ flex: 1 }}>
+                    <p className="headline" style={{ fontSize: 22, fontWeight: 900 }}>{step.title}</p>
+                    <p style={{ fontSize: 15, color: 'var(--on-surface-variant)', marginTop: 6, opacity: 0.8, fontWeight: 600 }}>{step.desc}</p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 
         {phase === 'result' && result && (
-          <div className="responsive-grid" style={{ padding: '16px 24px' }}>
-            <div style={{ margin: '0 auto', maxWidth: 800, width: '100%' }}>
+          <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+            {/* Filter pills - No Line logic */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 56, justifyContent: 'center' }}>
+              {[
+                `Budget ${formatRp(parseRp(budgetStr))}`,
+                `±${formatRp(result.budgetPerPerson)} /org`,
+                `${people} Orang · ${days} Hari`,
+                originLabel,
+                style === 'hemat' ? '💰 Hemat' : style === 'balance' ? '⚖️ Seimbang' : '✨ Luxury',
+              ].map((pill, i) => (
+                <span key={i} style={{ background: 'var(--surface-container-highest)', color: 'var(--on-surface)', padding: '12px 24px', borderRadius: 100, fontSize: 12, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  {pill}
+                </span>
+              ))}
+            </div>
 
-              {/* Filter tags header */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24, justifyContent: 'center' }}>
-                {[
-                  `Budget ${formatRp(parseRp(budgetStr))}`,
-                  `~${formatRp(result.budgetPerPerson)}/orang`,
-                  `${people} org · ${days} hari`,
-                  originLabel,
-                  style === 'hemat' ? '💰 Hemat' : style === 'balance' ? '⚖️ Seimbang' : '✨ Luxury',
-                ].map((pill, i) => (
-                  <span key={i} className="chip" style={{ background: 'var(--surface-container-high)', color: 'var(--on-surface-variant)' }}>
-                    {pill}
-                  </span>
-                ))}
-              </div>
-
-              {result.notEnoughBudget && (
-                <div className="card" style={{ background: 'var(--tertiary-container)', color: 'var(--on-tertiary-container)', textAlign: 'center' }}>
-                  <p style={{ fontSize: 32, marginBottom: 8 }}>😢</p>
-                  <p className="headline" style={{ fontSize: 18, marginBottom: 8 }}>Budget Belum Mencukupi</p>
-                  <p style={{ fontSize: 14 }}>
-                    Tiket dari {originLabel} dan durasi menginap ini membutuhkan tambahan budget.
-                    Silakan sesuaikan variabel di halaman sebelumnya.
-                  </p>
-                </div>
-              )}
-
-              {/* ── INSPIRATION RESULTS ─────────────────────────────────────── */}
-              {inspirationResults.length > 0 && (
-                <div>
-                  <div style={{ marginBottom: 24 }}>
-                    <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 6 }}>
-                      Destinasi Sesuai Budget Kamu ✨
-                    </h2>
-                    <p style={{ fontSize: 14, color: 'var(--on-surface-variant)' }}>
-                      Diurutkan berdasarkan kecocokan budget, cuaca, dan durasi libur terdekat
+            {result.notEnoughBudget && (
+              <div style={{ 
+                background: 'var(--surface-container-low)', padding: 56, borderRadius: 'var(--radius-xl)', textTransform: 'center', marginBottom: 64, border: 'none',
+                boxShadow: 'inset 0 0 100px rgba(158,0,31,0.02)'
+              }}>
+                <div style={{ textAlign: 'center' }}>
+                    <p style={{ fontSize: 72, marginBottom: 24 }}>⚠️</p>
+                    <h2 className="headline" style={{ fontSize: 32, fontWeight: 900, marginBottom: 16 }}>Anggaran Terbatas</h2>
+                    <p style={{ fontSize: 17, maxWidth: 480, margin: '0 auto', lineHeight: 1.7, opacity: 0.8, fontWeight: 600 }}>
+                      Wah, anggaranmu sepertinya kurang untuk perjalanan dari {originLabel} selama {days} hari.
+                      Coba turunkan durasi atau sesuaikan kota asal.
                     </p>
-                  </div>
+                </div>
+              </div>
+            )}
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
-                    {inspirationResults.map(d => (
-                      <div
-                        key={d.id}
-                        className="card hover-scale"
-                        onClick={() => setSelectedDest(d)}
-                        style={{
-                          padding: 0, overflow: 'hidden', cursor: 'pointer',
-                          border: d.matchScore > 50 ? '3px solid var(--primary-container)' : '1px solid var(--outline-variant)',
-                          boxShadow: 'var(--shadow-ambient)', transition: 'transform 0.2s'
-                        }}
-                      >
-                        {d.matchScore > 50 && (
-                          <div style={{ background: 'var(--primary-container)', color: '#fff', fontSize: 11, fontWeight: 800, padding: '8px', textAlign: 'center', textTransform: 'uppercase', letterSpacing: 1 }}>
-                            ⭐ 100% Cocok Dengan Budget Kamu
-                          </div>
-                        )}
-
-                        <div style={{ position: 'relative', height: 200 }}>
-                          <img src={d.image} alt={d.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
-                            {d.dynamicTags.map((t, i) => {
-                              const bg = t.type === 'danger' ? 'var(--primary-container)' : t.type === 'warning' ? '#FADB5F' : t.type === 'success' ? '#97E4A8' : 'rgba(255,255,255,0.9)';
-                              const color = t.type === 'danger' ? '#fff' : t.type === 'warning' ? '#4F3906' : t.type === 'success' ? '#0F5120' : 'var(--primary-container)';
-                              return (
-                                <span key={i} style={{
-                                  padding: '4px 10px', borderRadius: 'var(--radius-full)', fontSize: 11, fontWeight: 800,
-                                  background: bg, color, boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                                }}>
-                                  {t.label}
-                                </span>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        <div style={{ padding: 20 }}>
-                          <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 2 }}>{d.name}</h3>
-                          <p style={{ fontSize: 12, color: 'var(--on-surface-variant)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: 13 }}>location_on</span> {d.location}
-                          </p>
-
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
-                            <div style={{ background: 'var(--surface-container-low)', padding: '10px 12px', borderRadius: 'var(--radius-md)' }}>
-                              <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--primary-container)', textTransform: 'uppercase', marginBottom: 2 }}>✈️ Tiket PP × {people}</p>
-                              <p style={{ fontSize: 13, fontWeight: 800 }}>{d.flightPrice === 0 ? 'Roadtrip' : formatCurrency(d.totalFlightCost)}</p>
-                            </div>
-                            <div style={{ background: 'var(--surface-container-low)', padding: '10px 12px', borderRadius: 'var(--radius-md)' }}>
-                              <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--primary-container)', textTransform: 'uppercase', marginBottom: 2 }}>🛏️ Hotel × {days} malam</p>
-                              <p style={{ fontSize: 13, fontWeight: 800 }}>{formatCurrency(d.totalHotelCost)}</p>
-                            </div>
-                          </div>
-
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed var(--outline-variant)', paddingTop: 12, marginBottom: 14 }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--on-surface-variant)' }}>Estimasi Total ({people} org, {days} hr)</span>
-                            <span style={{ fontSize: 15, fontWeight: 900, color: d.canAfford ? 'var(--on-surface)' : 'var(--primary)' }}>{formatCurrency(d.estTotalCost)}</span>
-                          </div>
-
-                          <div style={{ display: 'flex', gap: 8 }}>
-                            <button
-                              onClick={e => { e.stopPropagation(); setSelectedDest(d); }}
-                              style={{
-                                flex: 1, padding: '12px', borderRadius: 'var(--radius-xl)',
-                                background: d.matchScore > 50 ? 'var(--primary-container)' : '#1a1a1a',
-                                color: '#fff', fontSize: 13, fontWeight: 700,
-                                border: 'none', cursor: 'pointer', transition: 'all 0.2s',
-                                display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6
-                              }}
-                            >
-                              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>map</span>
-                              Itinerary AI
-                            </button>
-                            <button
-                              onClick={e => { e.stopPropagation(); setShareDest(d); }}
-                              style={{ width: 46, borderRadius: 'var(--radius-xl)', background: 'var(--surface-container-high)', color: 'var(--on-surface)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                            >
-                              <span className="material-symbols-outlined" style={{ fontSize: 19 }}>share</span>
-                            </button>
-                          </div>
+            {/* ── INSPIRATION RESULTS ALIGNED WITH DASHBOARD ────────────────── */}
+            {inspirationResults.length > 0 && (
+              <div style={{ marginTop: 24 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 40 }}>
+                  {inspirationResults.map(d => (
+                    <div
+                      key={d.id}
+                      className="hover-scale"
+                      onClick={() => setSelectedDest(d)}
+                      style={{
+                        background: 'var(--surface-container-low)', borderRadius: 'var(--radius-xl)', padding: 24,
+                        cursor: 'pointer', transition: 'all 0.3s ease', boxShadow: 'var(--shadow-ambient)'
+                      }}
+                    >
+                      <div className="asymmetric-image" style={{ height: 260, position: 'relative', overflow: 'hidden' }}>
+                        <img src={d.image} alt={d.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <div style={{ position: 'absolute', top: 16, right: 16 }}>
+                           <span style={{ 
+                               background: 'rgba(158, 0, 31, 1)', color: '#fff', padding: '10px 16px', borderRadius: 100, 
+                               fontSize: 11, fontWeight: 900, letterSpacing: 1, boxShadow: '0 8px 20px rgba(158,0,31,0.3)' 
+                            }}>
+                             {d.matchScore}% MATCH
+                           </span>
                         </div>
                       </div>
-                    ))}
-                  </div>
 
-                  <div style={{ marginTop: 20, textAlign: 'center' }}>
-                    <button
-                      className="btn btn-secondary"
-                      onClick={() => navigate('/inspiration')}
-                      style={{ padding: '14px 32px', fontSize: 14, fontWeight: 700 }}
-                    >
-                      Lihat Semua di Inspirasi →
-                    </button>
-                  </div>
+                      <div style={{ marginTop: 24, padding: '0 8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+                          <div>
+                            <h3 className="headline" style={{ fontSize: 26, fontWeight: 900, letterSpacing: -0.5 }}>{d.name}</h3>
+                            <p style={{ fontSize: 15, color: 'var(--on-surface-variant)', marginTop: 4, fontWeight: 700 }}>{d.location}</p>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+                          <div style={{ background: 'var(--surface-container-lowest)', padding: 16, borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
+                            <p style={{ fontSize: 10, fontWeight: 900, color: 'var(--on-surface-variant)', marginBottom: 6, letterSpacing: 1 }}>FLIGHT PP</p>
+                            <p style={{ fontSize: 15, fontWeight: 900 }}>{d.flightPrice === 0 ? 'Roadtrip' : formatCurrency(d.totalFlightCost)}</p>
+                          </div>
+                          <div style={{ background: 'var(--surface-container-lowest)', padding: 16, borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
+                            <p style={{ fontSize: 10, fontWeight: 900, color: 'var(--on-surface-variant)', marginBottom: 6, letterSpacing: 1 }}>HOTEL TOTAL</p>
+                            <p style={{ fontSize: 15, fontWeight: 900 }}>{formatCurrency(d.totalHotelCost)}</p>
+                          </div>
+                        </div>
+
+                        <div style={{ 
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+                            background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%)', 
+                            color: '#fff', padding: '20px 24px', borderRadius: 'var(--radius-md)', marginBottom: 24,
+                            boxShadow: '0 12px 30px rgba(158,0,31,0.15)'
+                        }}>
+                          <div>
+                            <p style={{ fontSize: 10, fontWeight: 900, opacity: 0.8, letterSpacing: 1.5 }}>TOTAL ESTIMASI</p>
+                            <p style={{ fontSize: 22, fontWeight: 900, marginTop: 4 }}>{formatCurrency(d.estTotalCost)}</p>
+                          </div>
+                          <span style={{ fontSize: 32 }}>📊</span>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: 12 }}>
+                          <button className="btn btn-primary" style={{ flex: 1, padding: 18, fontSize: 14, fontWeight: 900 }} onClick={e => { e.stopPropagation(); setSelectedDest(d); }}>
+                            AI ITINERARY
+                          </button>
+                          <button 
+                            className="btn btn-secondary" 
+                            style={{ width: 60, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-container-highest)' }}
+                            onClick={e => { e.stopPropagation(); setShareDest(d); }}
+                          >
+                             <span style={{ fontSize: 22 }}>↗</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              )}
-
-              <div style={{ marginTop: 32 }}>
-                <button className="btn btn-secondary btn-full" onClick={() => { setPhase('form'); setResult(null); setStepsDone(0); setInspirationResults([]); }}>
-                  🔄 Coba Kombinasi Lain
-                </button>
               </div>
+            )}
+
+            <div style={{ marginTop: 80, textAlign: 'center' }}>
+              <button 
+                className="btn btn-secondary" 
+                style={{ padding: '20px 48px', fontWeight: 900, letterSpacing: 0.5, background: 'var(--surface-container-low)' }} 
+                onClick={() => { setPhase('form'); setResult(null); setStepsDone(0); setInspirationResults([]); }}
+              >
+                🔄 RENCANAKAN ULANG
+              </button>
             </div>
           </div>
         )}
 
-        {/* ── ITINERARY MODAL ──────────────────────────────────────────────── */}
+        {/* ── ITINERARY MODAL - REFINED ────────────────────────────────────── */}
         {selectedDest && (
           <div
             onClick={() => setSelectedDest(null)}
             style={{
-              position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)',
+              position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(28,28,25,0.7)', backdropFilter: 'blur(20px)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24
             }}
           >
             <div
               onClick={e => e.stopPropagation()}
               style={{
-                background: '#fff', width: '100%', maxWidth: 640, maxHeight: '90vh',
-                borderRadius: 32, overflowY: 'auto', boxShadow: '0 24px 64px rgba(0,0,0,0.3)',
+                background: 'var(--surface)', width: '100%', maxWidth: 720, maxHeight: '90vh',
+                borderRadius: 'var(--radius-xl)', overflowY: 'auto', boxShadow: '0 40px 100px rgba(0,0,0,0.5)',
                 position: 'relative', display: 'flex', flexDirection: 'column'
               }}
             >
               <button
                 onClick={() => setSelectedDest(null)}
-                style={{ position: 'absolute', top: 20, right: 20, width: 40, height: 40, borderRadius: 20, background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', cursor: 'pointer', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{ 
+                    position: 'absolute', top: 24, right: 24, width: 48, height: 48, borderRadius: 24, 
+                    background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', color: '#fff', 
+                    border: 'none', cursor: 'pointer', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 24, fontWeight: 900
+                }}
               >
-                <span className="material-symbols-outlined">close</span>
+                ✕
               </button>
 
-              <div style={{ height: 280, width: '100%', position: 'relative' }}>
+              <div className="asymmetric-image" style={{ height: 360, width: '100%', position: 'relative' }}>
                 <img src={selectedDest.image} alt={selectedDest.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)' }} />
-                <div style={{ position: 'absolute', bottom: 24, left: 32, right: 32 }}>
-                  <span style={{ background: 'var(--primary-container)', color: '#fff', padding: '4px 12px', borderRadius: 12, fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, display: 'inline-block' }}>
-                    AI Itinerary
-                  </span>
-                  <h2 style={{ fontSize: 32, fontWeight: 900, color: '#fff', lineHeight: 1.1, marginBottom: 4 }}>{selectedDest.name}</h2>
-                  <p style={{ fontSize: 15, color: '#ddd' }}>{selectedDest.location}</p>
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--surface), transparent)' }} />
+                <div style={{ position: 'absolute', bottom: 40, left: 40, right: 40 }}>
+                   <p style={{ fontSize: 13, color: 'var(--primary)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2.5, marginBottom: 8 }}>DESTINATION GUIDE</p>
+                   <h2 className="headline" style={{ fontSize: 56, fontWeight: 900, color: 'var(--on-surface)', lineHeight: 1, letterSpacing: -3 }}>{selectedDest.name}</h2>
+                   <p style={{ fontSize: 18, color: 'var(--on-surface-variant)', marginTop: 12, fontWeight: 600 }}>{selectedDest.location}</p>
                 </div>
               </div>
 
-              <div style={{ padding: 32, flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--surface-container)', padding: 16, borderRadius: 16, marginBottom: 32 }}>
-                  <span style={{ fontSize: 32 }}>✨</span>
+              <div style={{ padding: '0 40px 64px', flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 24, background: 'var(--surface-container-low)', padding: 32, borderRadius: 'var(--radius-lg)', marginBottom: 48, position: 'relative' }}>
+                  <div style={{ fontSize: 48, background: 'var(--surface-container-highest)', width: 80, height: 80, borderRadius: 'var(--radius-full)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✨</div>
                   <div>
-                    <h3 style={{ fontSize: 14, fontWeight: 800, color: 'var(--on-surface)' }}>Disusun Khusus Untuk Kamu</h3>
-                    <p style={{ fontSize: 12, color: 'var(--on-surface-variant)', lineHeight: 1.4, marginTop: 2 }}>
-                      {people} orang · {days} hari · {style === 'hemat' ? '💰 Hemat' : style === 'luxury' ? '✨ Luxury' : '⚖️ Seimbang'} · Estimasi {formatCurrency(selectedDest.estTotalCost)}
+                    <h3 className="headline" style={{ fontSize: 20, fontWeight: 900 }}>AI Smart Itinerary</h3>
+                    <p style={{ fontSize: 15, color: 'var(--on-surface-variant)', marginTop: 6, fontWeight: 700 }}>
+                      {people} pax · {days} days · Est. {formatCurrency(selectedDest.estTotalCost)}
                     </p>
                   </div>
                 </div>
 
-                <div style={{ position: 'relative', paddingLeft: 24, borderLeft: '2px solid var(--surface-container-high)', display: 'flex', flexDirection: 'column', gap: 32 }}>
+                <div style={{ position: 'relative', paddingLeft: 32, display: 'flex', flexDirection: 'column', gap: 48 }}>
+                  <div style={{ position: 'absolute', left: 4, top: 4, bottom: 4, width: 2, background: 'var(--primary)', opacity: 0.1 }} />
                   {selectedDest.itinerary.map((day, idx) => (
                     <div key={idx} style={{ position: 'relative' }}>
-                      <div style={{ position: 'absolute', left: -31, top: 0, width: 16, height: 16, borderRadius: 8, background: 'var(--primary-container)', border: '4px solid #fff' }} />
-                      <h4 style={{ fontSize: 16, fontWeight: 800, color: 'var(--primary-container)', marginBottom: 4, lineHeight: 1 }}>HARI {day.day}</h4>
-                      <h5 style={{ fontSize: 18, fontWeight: 900, color: 'var(--on-surface)', marginBottom: 12 }}>{day.title}</h5>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <div style={{ 
+                          position: 'absolute', left: -36, top: 6, width: 10, height: 10, borderRadius: 5, 
+                          background: 'var(--primary)', boxShadow: '0 0 10px rgba(158,0,31,0.4)' 
+                      }} />
+                      <h4 style={{ fontSize: 12, fontWeight: 900, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>HARI {day.day}</h4>
+                      <h5 className="headline" style={{ fontSize: 26, fontWeight: 900, marginBottom: 20 }}>{day.title}</h5>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                         {day.activities.map((act, i) => (
-                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--surface-container-lowest)', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--surface-container)' }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: 18, color: 'var(--on-surface-variant)' }}>
-                              {i === 0 ? 'flight_land' : i === day.activities.length - 1 ? 'bed' : 'explore'}
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 20, background: 'var(--surface-container-low)', padding: 20, borderRadius: 'var(--radius-md)' }}>
+                            <span style={{ fontSize: 24 }}>
+                              {i === 0 ? '🛫' : i === day.activities.length - 1 ? '🏨' : '📍'}
                             </span>
-                            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--on-surface)' }}>{act}</span>
+                            <span style={{ fontSize: 16, fontWeight: 700, opacity: 0.9 }}>{act}</span>
                           </div>
                         ))}
                       </div>
@@ -436,12 +435,13 @@ export default function FinancialPlannerPage() {
                   ))}
                 </div>
 
-                <div style={{ marginTop: 40, borderTop: '1px solid var(--surface-container)', paddingTop: 24 }}>
+                <div style={{ marginTop: 64 }}>
                   <button
-                    onClick={() => { setSelectedDest(null); navigate('/inspiration'); }}
-                    style={{ width: '100%', padding: '18px', borderRadius: 'var(--radius-xl)', background: 'var(--primary-container)', color: '#fff', fontSize: 16, fontWeight: 800, border: 'none', cursor: 'pointer', boxShadow: '0 8px 24px rgba(158,0,31,0.2)' }}
+                    className="btn btn-primary btn-full shadow-lg"
+                    style={{ padding: 24, fontSize: 18, fontWeight: 900, letterSpacing: 1 }}
+                    onClick={() => { setSelectedDest(null); navigate('/kalender'); }}
                   >
-                    Lihat Semua Destinasi ({formatCurrency(selectedDest.estTotalCost)})
+                    SIMPAN KE KALENDER 🗓️
                   </button>
                 </div>
               </div>
@@ -452,8 +452,10 @@ export default function FinancialPlannerPage() {
         {shareDest && <ShareSheet dest={shareDest} onClose={() => setShareDest(null)} />}
 
         <style>{`
-          .hover-scale:hover { transform: translateY(-4px); }
+          .hover-scale { transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+          .hover-scale:hover { transform: translateY(-8px); }
           @keyframes spin { to { transform: rotate(360deg); } }
+          @keyframes pulse { 0% { opacity: 0.05; } 50% { opacity: 0.15; } 100% { opacity: 0.05; } }
         `}</style>
       </div>
     );
