@@ -19,6 +19,7 @@ export interface Destination {
   weatherForecast: 'Sunny' | 'Rainy' | 'Cloudy';
   baseTags: { label: string; type: 'normal' | 'danger' | 'warning' | 'success' }[];
   itinerary: ItineraryDay[];
+  vacationTypes: ('kota' | 'alam' | 'pantai' | 'gunung')[];
 }
 
 export type TripStyle = 'hemat' | 'balance' | 'luxury';
@@ -33,14 +34,19 @@ export interface RecommendationResult extends Destination {
 }
 
 // Basis data destinasi yang diperluas
-const BASE_DESTINATIONS: (Omit<Destination, 'image' | 'weatherForecast' | 'flightPrice'> & { searchQuery: string })[] = [
+const BASE_DESTINATIONS: (Omit<Destination, 'image' | 'weatherForecast' | 'flightPrice'> & {
+  searchQuery: string;
+  fallbackImage: string;
+})[] = [
   {
     id: 'DPS',
     name: 'Uluwatu, Bali',
     location: 'Bali, Indonesia',
     hotelPerNight: 1200000,
     flightDurationHours: 1.5,
-    searchQuery: 'Uluwatu Bali Temple',
+    searchQuery: 'Uluwatu Bali Temple cliff ocean',
+    fallbackImage: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80',
+    vacationTypes: ['pantai'],
     baseTags: [{ label: '🏖️ Pantai', type: 'normal' }, { label: 'TRENDING', type: 'danger' }],
     itinerary: [
       { day: 1, title: 'Arrival & Beach Club', activities: ['Check-in Hotel', 'Makan siang di Single Fin', 'Sunset di Uluwatu Temple & Tari Kecak'] },
@@ -54,7 +60,9 @@ const BASE_DESTINATIONS: (Omit<Destination, 'image' | 'weatherForecast' | 'fligh
     location: 'Jawa Tengah, Indonesia',
     hotelPerNight: 650000,
     flightDurationHours: 1,
-    searchQuery: 'Borobudur Temple Sunrise',
+    searchQuery: 'Borobudur Temple Sunrise Magelang',
+    fallbackImage: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+    vacationTypes: ['kota', 'alam'],
     baseTags: [{ label: '🏛️ Budaya', type: 'normal' }],
     itinerary: [
       { day: 1, title: 'Tiba di Yogyakarta', activities: ['Tiba di YIA', 'Kuliner Gudeg', 'Jalan-jalan Malioboro malam'] },
@@ -68,7 +76,9 @@ const BASE_DESTINATIONS: (Omit<Destination, 'image' | 'weatherForecast' | 'fligh
     location: 'NTT, Indonesia',
     hotelPerNight: 1800000,
     flightDurationHours: 2.5,
-    searchQuery: 'Labuan Bajo Padar Island',
+    searchQuery: 'Labuan Bajo Padar Island aerial view',
+    fallbackImage: 'https://images.unsplash.com/photo-1573790387438-4da905039392?w=800&q=80',
+    vacationTypes: ['pantai', 'alam'],
     baseTags: [{ label: '🌊 Premium', type: 'warning' }],
     itinerary: [
       { day: 1, title: 'Tiba & Sail', activities: ['Tiba di Bandara Komodo', 'Check-in Kapal Phinisi', 'Sunset di Pulau Kalong'] },
@@ -82,7 +92,9 @@ const BASE_DESTINATIONS: (Omit<Destination, 'image' | 'weatherForecast' | 'fligh
     location: 'Jawa Timur, Indonesia',
     hotelPerNight: 750000,
     flightDurationHours: 1.5,
-    searchQuery: 'Mount Bromo Sunrise',
+    searchQuery: 'Mount Bromo volcano sunrise Indonesia',
+    fallbackImage: 'https://images.unsplash.com/photo-1575408264798-b50b252663e6?w=800&q=80',
+    vacationTypes: ['gunung', 'alam'],
     baseTags: [{ label: '⛰️ Petualangan Alam', type: 'normal' }],
     itinerary: [
       { day: 1, title: 'Tiba di Malang', activities: ['Tiba di Bandara Abdul Rachman Saleh', 'Kuliner Bakso President', 'Istirahat lebih awal'] },
@@ -96,7 +108,9 @@ const BASE_DESTINATIONS: (Omit<Destination, 'image' | 'weatherForecast' | 'fligh
     location: 'NTB, Indonesia',
     hotelPerNight: 950000,
     flightDurationHours: 2,
-    searchQuery: 'Gili Trawangan Beach',
+    searchQuery: 'Gili Trawangan beach crystal water Indonesia',
+    fallbackImage: 'https://images.unsplash.com/photo-1562337834-c23ecc0c32f7?w=800&q=80',
+    vacationTypes: ['pantai'],
     baseTags: [{ label: '🚤 Island Hopping', type: 'normal' }],
     itinerary: [
       { day: 1, title: 'Lombok Tengah', activities: ['Tiba di Bandara Lombok', 'Desa Sade', 'Sunset di Pantai Kuta Mandalika'] },
@@ -110,7 +124,9 @@ const BASE_DESTINATIONS: (Omit<Destination, 'image' | 'weatherForecast' | 'fligh
     location: 'Sumatera Utara, Indonesia',
     hotelPerNight: 850000,
     flightDurationHours: 2.5,
-    searchQuery: 'Lake Toba Samosir',
+    searchQuery: 'Lake Toba Samosir island Indonesia aerial',
+    fallbackImage: 'https://images.unsplash.com/photo-1596422846543-75c6fc197f07?w=800&q=80',
+    vacationTypes: ['alam', 'kota'],
     baseTags: [{ label: '🛶 Sejarah Alam', type: 'normal' }],
     itinerary: [
       { day: 1, title: 'Tiba di Medan', activities: ['Tiba di Kualanamu', 'Kuliner Ucok Durian', 'Perjalanan darat ke Parapat'] },
@@ -124,7 +140,9 @@ const BASE_DESTINATIONS: (Omit<Destination, 'image' | 'weatherForecast' | 'fligh
     location: 'Papua Barat Daya, Indonesia',
     hotelPerNight: 2800000,
     flightDurationHours: 4,
-    searchQuery: 'Wayag Raja Ampat',
+    searchQuery: 'Wayag Raja Ampat Papua karst island ocean',
+    fallbackImage: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&q=80',
+    vacationTypes: ['pantai', 'alam'],
     baseTags: [{ label: '💎 Ultimate Dream', type: 'danger' }],
     itinerary: [
       { day: 1, title: 'Perjalanan Panjang', activities: ['Tiba di Sorong', 'Nyebrang ke Waisai', 'Check-in Resort'] },
@@ -138,7 +156,9 @@ const BASE_DESTINATIONS: (Omit<Destination, 'image' | 'weatherForecast' | 'fligh
     location: 'Jawa Barat, Indonesia',
     hotelPerNight: 700000,
     flightDurationHours: 0.5,
-    searchQuery: 'Lembang Bandung',
+    searchQuery: 'Lembang Bandung mountain tea plantation Indonesia',
+    fallbackImage: 'https://images.unsplash.com/photo-1612349317150-e413f6a422ed?w=800&q=80',
+    vacationTypes: ['alam', 'kota', 'gunung'],
     baseTags: [{ label: '🚗 Roadtrip Recommended', type: 'success' }],
     itinerary: [
       { day: 1, title: 'Tiba & Kuliner', activities: ['Perjalanan via Tol (Jika dari Jakarta) / Pesawat', 'Makan di Kampung Daun', 'Lembang Park & Zoo'] },
@@ -163,7 +183,7 @@ async function fetchFlightPrice(destinationIATA: string, outDate: string, inDate
     const url = `/api/serp/search.json?engine=google_flights&departure_id=CGK&arrival_id=${destinationIATA}&outbound_date=${outDate}&return_date=${inDate}&currency=IDR&hl=id&api_key=${SERP_API_KEY}`;
     const res = await fetch(url);
     const data = await res.json();
-    
+
     if (data.best_flights && data.best_flights.length > 0) {
       const price = data.best_flights[0].price;
       flightCache[cacheKey] = price;
@@ -180,13 +200,15 @@ async function fetchFlightPrice(destinationIATA: string, outDate: string, inDate
 }
 
 // Helper untuk fetch Google Images via SerpApi Proxy
-async function fetchImage(query: string): Promise<string> {
+async function fetchImage(query: string, fallback: string): Promise<string> {
   if (imageCache[query]) return imageCache[query];
+  // Jika API key tidak ada, langsung pakai fallback per-destinasi
+  if (!SERP_API_KEY) return fallback;
   try {
     const url = `/api/serp/search.json?engine=google_images&q=${encodeURIComponent(query + ' tourism high quality')}&api_key=${SERP_API_KEY}`;
     const res = await fetch(url);
     const data = await res.json();
-    
+
     if (data.images_results && data.images_results.length > 0) {
       const img = data.images_results[0].original;
       imageCache[query] = img;
@@ -195,7 +217,7 @@ async function fetchImage(query: string): Promise<string> {
   } catch (error) {
     console.warn(`Gagal mengambil gambar untuk ${query}`, error);
   }
-  return 'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=800&q=80'; // fallback
+  return fallback;
 }
 
 /**
@@ -207,12 +229,14 @@ async function fetchImage(query: string): Promise<string> {
  *     hemat   → utamakan harga terendah
  *     balance → seimbangkan harga & kenyamanan
  *     luxury  → utamakan kenyamanan (hotel mahal, destinasi premium)
+ * - vacationType mempengaruhi bonus skor destinasi yang sesuai
  */
 export async function getRecommendations(
   userBudget: number,
   people: number = 2,
   days: number = 3,
   style: TripStyle = 'balance',
+  vacationType?: string,
 ): Promise<RecommendationResult[]> {
   const nextLW = getNextLongWeekend();
 
@@ -221,7 +245,7 @@ export async function getRecommendations(
 
   const results = await Promise.all(BASE_DESTINATIONS.map(async (baseDest) => {
     const rawFlight = await fetchFlightPrice(baseDest.id, outDate, inDate);
-    const image     = await fetchImage(baseDest.searchQuery);
+    const image     = await fetchImage(baseDest.searchQuery, baseDest.fallbackImage);
     const weatherForecast: 'Sunny' | 'Rainy' = Math.random() > 0.3 ? 'Sunny' : 'Rainy';
 
     const fallbacks: Record<string, number> = {
@@ -238,6 +262,12 @@ export async function getRecommendations(
 
     const tags = [...baseDest.baseTags] as { label: string; type: 'normal' | 'danger' | 'warning' | 'success' }[];
     let score = 0;
+
+    // ── Bonus berdasarkan tipe liburan user ──────────────────────────────
+    if (vacationType && baseDest.vacationTypes.includes(vacationType as 'kota' | 'alam' | 'pantai' | 'gunung')) {
+      score += 25;
+      tags.push({ label: '⭐ Sesuai Preferensi', type: 'success' });
+    }
 
     // ── Syarat utama: total biaya tidak melebihi budget ──────────────────
     if (canAfford) {
@@ -306,6 +336,7 @@ export async function getRecommendations(
       totalHotelCost,
       canAfford,
       dynamicTags: tags,
+      vacationTypes: baseDest.vacationTypes,
     } as RecommendationResult;
   }));
 

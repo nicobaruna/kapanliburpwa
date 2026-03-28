@@ -12,7 +12,9 @@
       "Bash(node:*)",
       "Bash(python -m json.tool)",
       "Read(//c/Users/CRPAdmin/.claude/**)",
-      "Skill(update-config)"
+      "Skill(update-config)",
+      "Bash(find /c/Users/CRPAdmin/dev/kapanliburpwa/src -type f \\\\\\(-name *.tsx -o -name *.ts -o -name *.jsx -o -name *.js \\\\\\))",
+      "Bash(npx tsc:*)"
     ]
   }
 }
