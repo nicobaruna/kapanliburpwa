@@ -22,6 +22,22 @@ type CutiRec = {
 function computeCutiRecs(year: number, month: number): CutiRec[] {
   const nonWorking = getAllNonWorkingDates(year);
 
+  // For run-extension: only weekends + national holidays.
+  // Excludes cuti_bersama of unrelated periods so they don't inflate the run count.
+  const runExtSet = new Set<string>();
+  for (let m = 0; m < 12; m++) {
+    const dim = new Date(year, m + 1, 0).getDate();
+    for (let d = 1; d <= dim; d++) {
+      const dt = new Date(year, m, d);
+      const dow = dt.getDay();
+      if (dow === 0 || dow === 6) runExtSet.add(dt.toISOString().split('T')[0]);
+    }
+  }
+  HOLIDAYS_2026.forEach(h => {
+    // Only include pure national holidays, not standalone cuti_bersama entries
+    if (h.type.includes('nasional') && !h.type.includes('cuti_bersama')) runExtSet.add(h.date);
+  });
+
   const monthHolidays = HOLIDAYS_2026.filter(h => {
     const d = new Date(h.date + 'T00:00:00');
     const dow = d.getDay();
@@ -32,7 +48,7 @@ function computeCutiRecs(year: number, month: number): CutiRec[] {
   const recs: CutiRec[] = [];
 
   function getRunBounds(allDates: string[]): { days: number; start: string; end: string } {
-    const tempSet = new Set([...nonWorking, ...allDates]);
+    const tempSet = new Set([...runExtSet, ...allDates]);
     const anchor = allDates[0];
     let cur = new Date(anchor + 'T00:00:00');
     while (tempSet.has(new Date(cur.getTime() - 86400000).toISOString().split('T')[0]))
@@ -236,12 +252,19 @@ export default function CalendarPage() {
 
                 let bg = 'var(--surface-container-lowest)';
                 let numColor = isSun ? 'var(--primary)' : 'var(--on-surface)';
+                let cellLabel: string | null = null;
 
-                if (isCuti)        { bg = 'var(--secondary-container)'; numColor = 'var(--on-secondary-container)'; }
-                else if (isHighlight) { bg = 'var(--primary)'; numColor = '#fff'; }
-                else if (isHoliday && isCutiBersama) { bg = 'rgba(27,109,36,0.1)'; numColor = 'var(--secondary)'; }
-                else if (isHoliday)   { bg = 'rgba(158,0,31,0.09)'; numColor = 'var(--primary)'; }
-                else if (isToday)     { bg = 'var(--surface-container-high)'; }
+                if (isCuti) {
+                  bg = 'rgba(25,118,210,0.13)'; numColor = '#1264b0'; cellLabel = 'CUTI';
+                } else if (isHighlight) {
+                  bg = 'var(--primary)'; numColor = '#fff';
+                } else if (isHoliday && isCutiBersama) {
+                  bg = 'rgba(27,109,36,0.13)'; numColor = '#1b6d24'; cellLabel = 'CB';
+                } else if (isHoliday) {
+                  bg = 'rgba(158,0,31,0.11)'; numColor = 'var(--primary)'; cellLabel = 'LN';
+                } else if (isToday) {
+                  bg = 'var(--surface-container-high)';
+                }
 
                 return (
                   <div
@@ -252,12 +275,13 @@ export default function CalendarPage() {
                     className={isHoliday ? 'hover-scale' : ''}
                   >
                     <span style={{ fontSize: 13, fontWeight: 900, color: numColor, lineHeight: 1 }}>{cell.day}</span>
-                    {isCuti && <span style={{ fontSize: 7, fontWeight: 900, color: 'var(--on-secondary-container)', marginTop: 3 }}>CUTI</span>}
-                    {isHighlight && !isCuti && <span style={{ marginTop: 4, color: 'rgba(255,255,255,0.8)', fontSize: 7, fontWeight: 900 }}>
-                      {holiday?.emoji ?? 'LW'}
-                    </span>}
-                    {isHoliday && !isHighlight && !isCuti && (
-                      <div style={{ marginTop: 4, width: 4, height: 4, borderRadius: 2, background: isCutiBersama ? 'var(--secondary)' : 'var(--primary)' }} />
+                    {cellLabel && !isHighlight && (
+                      <span style={{ fontSize: 7, fontWeight: 900, color: numColor, marginTop: 3, letterSpacing: 0.3 }}>{cellLabel}</span>
+                    )}
+                    {isHighlight && !isCuti && (
+                      <span style={{ marginTop: 4, color: 'rgba(255,255,255,0.8)', fontSize: 7, fontWeight: 900 }}>
+                        {holiday?.emoji ?? 'LW'}
+                      </span>
                     )}
                   </div>
                 );
@@ -265,14 +289,20 @@ export default function CalendarPage() {
             </div>
 
             {/* Legend */}
-            <div style={{ display: 'flex', gap: 20, marginTop: 20, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 16, marginTop: 20, flexWrap: 'wrap' }}>
               {[
-                { color: 'var(--primary)', label: 'Libur Nasional' },
-                { color: 'var(--secondary)', label: 'Cuti Bersama' },
-                { color: 'var(--secondary-container)', label: 'Rekomendasi Cuti' },
+                { bg: 'rgba(158,0,31,0.11)', color: 'var(--primary)',  label: 'Libur Nasional', tag: 'LN' },
+                { bg: 'rgba(27,109,36,0.13)',  color: '#1b6d24',       label: 'Cuti Bersama',   tag: 'CB' },
+                { bg: 'rgba(25,118,210,0.13)', color: '#1264b0',       label: 'Cuti Tahunan',   tag: 'CUTI' },
               ].map(l => (
-                <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <div style={{ width: 10, height: 10, borderRadius: 3, background: l.color }} />
+                <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <div style={{
+                    width: 28, height: 18, borderRadius: 4,
+                    background: l.bg,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <span style={{ fontSize: 6, fontWeight: 900, color: l.color, letterSpacing: 0.2 }}>{l.tag}</span>
+                  </div>
                   <span style={{ fontSize: 11, color: 'var(--on-surface-variant)', fontWeight: 600 }}>{l.label}</span>
                 </div>
               ))}
