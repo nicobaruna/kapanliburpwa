@@ -23,12 +23,23 @@ export interface Destination {
 
 export type TripStyle = 'hemat' | 'balance' | 'luxury';
 
+export interface RoadTripDetails {
+  distanceKm: number;
+  litersNeeded: number;
+  pertalitePerLiter: number;
+  fuelCostTotal: number;  // round trip, per mobil
+  tollCostTotal: number;  // round trip, per mobil
+  totalRoadTripCost: number;
+}
+
 export interface RecommendationResult extends Destination {
   matchScore: number;
   estTotalCost: number;
   totalFlightCost: number;
   totalHotelCost: number;
   canAfford: boolean;
+  isRoadTrip: boolean;
+  roadTripDetails?: RoadTripDetails;
   dynamicTags: { label: string; type: 'normal' | 'danger' | 'warning' | 'success' }[];
 }
 
@@ -148,16 +159,55 @@ const BASE_DESTINATIONS: (Omit<Destination, 'image' | 'weatherForecast' | 'fligh
   }
 ];
 
+// ── Road Trip constants ────────────────────────────────────────────────────────
+const PERTALITE_PER_LITER = 10_000; // Rp/liter (harga Pertalite 2024)
+const KM_PER_LITER = 10;            // konsumsi BBM 1:10
+
+// Jarak (km) & biaya tol sekali jalan (Rp) per kota asal menuju BDO (Bandung/Lembang)
+const ROAD_TRIP_TABLE: Record<string, Record<string, { distanceKm: number; tollOneWayRp: number }>> = {
+  BDO: {
+    jakarta:    { distanceKm: 150, tollOneWayRp: 55_000  },
+    bandung:    { distanceKm: 30,  tollOneWayRp: 0        },
+    surabaya:   { distanceKm: 700, tollOneWayRp: 185_000  },
+    yogyakarta: { distanceKm: 390, tollOneWayRp: 100_000  },
+    semarang:   { distanceKm: 340, tollOneWayRp: 95_000   },
+    malang:     { distanceKm: 780, tollOneWayRp: 200_000  },
+    medan:      { distanceKm: 2150, tollOneWayRp: 0        }, // jalan umum, hampir tidak feasible
+    makassar:   { distanceKm: 2500, tollOneWayRp: 0        },
+    bali:       { distanceKm: 1250, tollOneWayRp: 0        }, // via ferry
+  },
+};
+
+function calcRoadTrip(destId: string, origin: string): RoadTripDetails | null {
+  const table = ROAD_TRIP_TABLE[destId];
+  if (!table) return null;
+  const data = table[origin] ?? table['jakarta']; // fallback ke Jakarta jika origin tidak ada
+  const distanceKm = data.distanceKm;
+  const litersNeeded = (distanceKm * 2) / KM_PER_LITER; // perjalanan pulang-pergi
+  const fuelCostTotal = Math.round(litersNeeded * PERTALITE_PER_LITER);
+  const tollCostTotal = data.tollOneWayRp * 2;
+  return {
+    distanceKm,
+    litersNeeded,
+    pertalitePerLiter: PERTALITE_PER_LITER,
+    fuelCostTotal,
+    tollCostTotal,
+    totalRoadTripCost: fuelCostTotal + tollCostTotal,
+  };
+}
+
+// Road trip destination IDs — tidak ada harga tiket pesawat
+const ROAD_TRIP_IDS = new Set(['BDO']);
+
 // In-memory cache to prevent redundant proxy requests (reduces ECONNRESET risks)
 const flightCache: Record<string, number> = {};
 const imageCache: Record<string, string> = {};
 
 // Helper untuk fetch Google Flights via SerpApi Proxy
 async function fetchFlightPrice(destinationIATA: string, outDate: string, inDate: string): Promise<number> {
+  if (ROAD_TRIP_IDS.has(destinationIATA)) return 0; // road trip, tidak ada tiket pesawat
   const cacheKey = `${destinationIATA}_${outDate}_${inDate}`;
   if (flightCache[cacheKey]) return flightCache[cacheKey];
-  // Jika BDO (Bandung) dari CGK, anggap kereta/mobil = 200rb (fallback logis)
-  if (destinationIATA === 'BDO') return 200000;
 
   try {
     const url = `/api/serp/search.json?engine=google_flights&departure_id=CGK&arrival_id=${destinationIATA}&outbound_date=${outDate}&return_date=${inDate}&currency=IDR&hl=id&api_key=${SERP_API_KEY}`;
