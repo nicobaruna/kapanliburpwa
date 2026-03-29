@@ -230,12 +230,13 @@ export function getAllNonWorkingDates(year: number = 2026): Set<string> {
   // Add all holiday dates
   HOLIDAYS_2026.forEach(h => nonWorking.add(h.date));
 
-  // Add all Saturdays and Sundays
+  // Add all Saturdays and Sundays (use local date components to avoid UTC offset bugs)
   const d = new Date(year, 0, 1);
   while (d.getFullYear() === year) {
     const day = d.getDay();
     if (day === 0 || day === 6) {
-      nonWorking.add(d.toISOString().split('T')[0]);
+      const s = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      nonWorking.add(s);
     }
     d.setDate(d.getDate() + 1);
   }
@@ -260,9 +261,10 @@ export function detectLongWeekends(): LongWeekend[] {
     // Find consecutive run
     const run: string[] = [];
     const cur = new Date(startDate + 'T00:00:00');
-    while (nonWorking.has(cur.toISOString().split('T')[0])) {
-      run.push(cur.toISOString().split('T')[0]);
-      visited.add(cur.toISOString().split('T')[0]);
+    while (nonWorking.has(`${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`)) {
+      const ds = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
+      run.push(ds);
+      visited.add(ds);
       cur.setDate(cur.getDate() + 1);
     }
 

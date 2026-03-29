@@ -14,7 +14,9 @@
       "Read(//c/Users/CRPAdmin/.claude/**)",
       "Skill(update-config)",
       "Bash(find /c/Users/CRPAdmin/dev/kapanliburpwa/src -type f \\\\\\(-name *.tsx -o -name *.ts -o -name *.jsx -o -name *.js \\\\\\))",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(python cli/assets/scripts/search.py \"travel vacation onboarding personalization mobile\" --design-system -p \"KapanLibur Onboarding\")",
+      "Bash(python cli/assets/scripts/search.py \"multi-step onboarding selection cards progress\" --domain ux -n 5)"
     ]
   }
 }

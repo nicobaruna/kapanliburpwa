@@ -2,10 +2,32 @@ import React, { useState } from 'react';
 import { formatCurrency } from '../services/api';
 import type { RecommendationResult } from '../services/api';
 
-interface Props {
+/* ── Share payload types ─────────────────────────────────── */
+
+export interface DestinationSharePayload {
+  type: 'destination';
   dest: RecommendationResult;
+}
+
+export interface GenericSharePayload {
+  type: 'generic';
+  emoji: string;
+  title: string;
+  subtitle: string;
+  tag?: string;
+  tagColor?: string;
+  shareText: string;
+  shareUrl: string;
+}
+
+export type SharePayload = DestinationSharePayload | GenericSharePayload;
+
+interface Props {
+  payload: SharePayload;
   onClose: () => void;
 }
+
+/* ── Social platform icons ───────────────────────────────── */
 
 function WaIcon() {
   return (
@@ -49,51 +71,40 @@ function IgIcon() {
 
 const PLATFORMS = [
   {
-    id: 'whatsapp',
-    name: 'WhatsApp',
-    bg: '#25D366',
-    icon: <WaIcon />,
-    getUrl: (text: string, url: string) =>
-      `https://wa.me/?text=${encodeURIComponent(text + '\n' + url)}`,
+    id: 'whatsapp', name: 'WhatsApp', bg: '#25D366', icon: <WaIcon />,
+    getUrl: (text: string, url: string) => `https://wa.me/?text=${encodeURIComponent(text + '\n' + url)}`,
   },
   {
-    id: 'x',
-    name: 'X',
-    bg: '#000',
-    icon: <XIcon />,
-    getUrl: (text: string, url: string) =>
-      `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
+    id: 'x', name: 'X', bg: '#000', icon: <XIcon />,
+    getUrl: (text: string, url: string) => `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
   },
   {
-    id: 'facebook',
-    name: 'Facebook',
-    bg: '#1877F2',
-    icon: <FbIcon />,
-    getUrl: (_text: string, url: string) =>
-      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+    id: 'facebook', name: 'Facebook', bg: '#1877F2', icon: <FbIcon />,
+    getUrl: (_text: string, url: string) => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
   },
   {
-    id: 'threads',
-    name: 'Threads',
-    bg: '#101010',
-    icon: <ThreadsIcon />,
-    getUrl: (text: string, url: string) =>
-      `https://www.threads.net/intent/post?text=${encodeURIComponent(text + '\n' + url)}`,
+    id: 'threads', name: 'Threads', bg: '#101010', icon: <ThreadsIcon />,
+    getUrl: (text: string, url: string) => `https://www.threads.net/intent/post?text=${encodeURIComponent(text + '\n' + url)}`,
   },
   {
-    id: 'instagram',
-    name: 'Instagram',
+    id: 'instagram', name: 'Instagram',
     bg: 'linear-gradient(135deg,#f09433,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888)',
     icon: <IgIcon />,
-    getUrl: null, // Instagram has no web share URL — copy to clipboard
+    getUrl: null,
   },
 ];
 
-export default function ShareSheet({ dest, onClose }: Props) {
+export default function ShareSheet({ payload, onClose }: Props) {
   const [copied, setCopied] = useState(false);
 
-  const shareUrl = `${window.location.origin}/inspiration/${dest.id}`;
-  const shareText = `🌴 Liburan ke ${dest.name}!\n📍 ${dest.location}\n💰 Estimasi: ${formatCurrency(dest.estTotalCost)}\n\nCek itinerary lengkap di KapanLibur:`;
+  /* Resolve text / url from payload */
+  const shareUrl = payload.type === 'destination'
+    ? `${window.location.origin}/inspiration/${payload.dest.id}`
+    : payload.shareUrl;
+
+  const shareText = payload.type === 'destination'
+    ? `🌴 Liburan ke ${payload.dest.name}!\n📍 ${payload.dest.location}\n💰 Estimasi: ${formatCurrency(payload.dest.estTotalCost)}\n\nCek itinerary lengkap di KapanLibur:`
+    : payload.shareText;
 
   async function copyLink() {
     await navigator.clipboard.writeText(shareUrl);
@@ -110,60 +121,91 @@ export default function ShareSheet({ dest, onClose }: Props) {
       />
 
       {/* Sheet */}
-      <div
-        style={{
-          position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 10001,
-          background: 'var(--surface-container-lowest)', 
-          borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
-          padding: '0 0 48px',
-          animation: 'slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-          maxWidth: 640, margin: '0 auto',
-          boxShadow: '0 -10px 40px rgba(0,0,0,0.1)'
-        }}
-      >
+      <div style={{
+        position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 10001,
+        background: 'var(--surface-container-lowest)',
+        borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
+        padding: '0 0 48px',
+        animation: 'slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        maxWidth: 640, margin: '0 auto',
+        boxShadow: '0 -10px 40px rgba(0,0,0,0.1)',
+      }}>
         {/* Handle */}
-        <div style={{ width: 44, height: 5, background: 'var(--outline-variant)', borderRadius: 'var(--radius-full)', margin: '16px auto 28px', opacity: 0.5 }} />
+        <div style={{ width: 44, height: 5, background: 'var(--outline-variant)', borderRadius: 'var(--radius-full)', margin: '16px auto 24px', opacity: 0.5 }} />
 
-        {/* Destination preview - Use Tonal Layering instead of border */}
+        {/* Preview */}
         <div style={{ padding: '0 24px 24px' }}>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center', background: 'var(--surface-container-low)', padding: 16, borderRadius: 'var(--radius-md)' }}>
-            <img
-              src={dest.image} alt={dest.name}
-              style={{ width: 72, height: 72, borderRadius: 'var(--radius-default)', objectFit: 'cover', flexShrink: 0 }}
-            />
-            <div style={{ flex: 1 }}>
-              <p className="headline" style={{ fontWeight: 800, fontSize: 18, marginBottom: 2 }}>{dest.name}</p>
-              <p style={{ fontSize: 14, color: 'var(--on-surface-variant)', marginBottom: 4 }}>{dest.location}</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ background: 'rgba(158,0,31,0.1)', color: 'var(--primary)', padding: '4px 10px', borderRadius: 8, fontSize: 11, fontWeight: 900, letterSpacing: 0.5 }}>BEST MATCH</span>
-                <p style={{ fontSize: 13, color: 'var(--on-surface-variant)', fontWeight: 700 }}>{formatCurrency(dest.estTotalCost)}</p>
+          {payload.type === 'destination' ? (
+            /* Destination preview */
+            <div style={{ display: 'flex', gap: 16, alignItems: 'center', background: 'var(--surface-container-low)', padding: 16, borderRadius: 'var(--radius-md)' }}>
+              <img
+                src={payload.dest.image} alt={payload.dest.name}
+                style={{ width: 72, height: 72, borderRadius: 'var(--radius-default)', objectFit: 'cover', flexShrink: 0 }}
+              />
+              <div style={{ flex: 1 }}>
+                <p className="headline" style={{ fontWeight: 800, fontSize: 18, marginBottom: 2 }}>{payload.dest.name}</p>
+                <p style={{ fontSize: 14, color: 'var(--on-surface-variant)', marginBottom: 4 }}>{payload.dest.location}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ background: 'rgba(158,0,31,0.1)', color: 'var(--primary)', padding: '4px 10px', borderRadius: 8, fontSize: 11, fontWeight: 900, letterSpacing: 0.5 }}>BEST MATCH</span>
+                  <p style={{ fontSize: 13, color: 'var(--on-surface-variant)', fontWeight: 700 }}>{formatCurrency(payload.dest.estTotalCost)}</p>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            /* Generic preview */
+            <div style={{
+              display: 'flex', gap: 16, alignItems: 'center',
+              background: 'var(--surface-container-low)',
+              padding: '16px 20px', borderRadius: 'var(--radius-md)',
+            }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: 14, flexShrink: 0,
+                background: 'var(--surface-container-high)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 26,
+              }}>
+                {payload.emoji}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {payload.tag && (
+                  <span style={{
+                    fontSize: 9, fontWeight: 900, letterSpacing: 1.2,
+                    textTransform: 'uppercase',
+                    color: payload.tagColor ?? 'var(--primary)',
+                    display: 'block', marginBottom: 4,
+                  }}>
+                    {payload.tag}
+                  </span>
+                )}
+                <p className="headline" style={{ fontWeight: 800, fontSize: 17, marginBottom: 3, lineHeight: 1.2 }}>
+                  {payload.title}
+                </p>
+                <p style={{ fontSize: 13, color: 'var(--on-surface-variant)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {payload.subtitle}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Platform buttons */}
         <div style={{ padding: '8px 24px 0', display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap' }}>
           {PLATFORMS.map(p => {
             const isIg = p.id === 'instagram';
-            const url = p.getUrl ? p.getUrl(shareText, shareUrl) : null;
-
-            const circleStyle = {
-              width: 60, height: 60, borderRadius: '50%',
-              background: p.bg, display: 'flex', alignItems: 'center',
-              justifyContent: 'center', boxShadow: 'var(--shadow-ambient)',
-              transition: 'transform 0.2s',
-            };
-
+            const url  = p.getUrl ? p.getUrl(shareText, shareUrl) : null;
             return (
               <div key={p.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }} className="hover-scale">
                 {isIg ? (
                   <button onClick={copyLink} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                    <div style={circleStyle}>{p.icon}</div>
+                    <div style={{ width: 60, height: 60, borderRadius: '50%', background: p.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-ambient)', transition: 'transform 0.2s' }}>
+                      {p.icon}
+                    </div>
                   </button>
                 ) : (
                   <a href={url!} target="_blank" rel="noopener noreferrer" onClick={onClose} style={{ textDecoration: 'none' }}>
-                    <div style={circleStyle}>{p.icon}</div>
+                    <div style={{ width: 60, height: 60, borderRadius: '50%', background: p.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-ambient)', transition: 'transform 0.2s' }}>
+                      {p.icon}
+                    </div>
                   </a>
                 )}
                 <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--on-surface-variant)', letterSpacing: 0.2 }}>
@@ -180,12 +222,8 @@ export default function ShareSheet({ dest, onClose }: Props) {
           <span style={{ fontSize: 13, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--on-surface-variant)', fontWeight: 600 }}>
             {shareUrl}
           </span>
-          <button
-            onClick={copyLink}
-            className="btn btn-primary"
-            style={{ padding: '8px 24px', fontSize: 13, borderRadius: 'var(--radius-full)' }}
-          >
-            {copied ? 'Tersalin' : 'Salin Link'}
+          <button onClick={copyLink} className="btn btn-primary" style={{ padding: '8px 24px', fontSize: 13, borderRadius: 'var(--radius-full)', whiteSpace: 'nowrap' }}>
+            {copied ? 'Tersalin ✓' : 'Salin Link'}
           </button>
         </div>
       </div>

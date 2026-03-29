@@ -9,6 +9,11 @@ import { HOLIDAYS_2026, LONG_WEEKENDS_2026, getAllNonWorkingDates } from '../dat
 const MONTHS_ID = ['Januari','Februari','Maret','April','Mei','Juni',
   'Juli','Agustus','September','Oktober','November','Desember'];
 
+/** Timezone-safe: formats a Date as YYYY-MM-DD using LOCAL calendar date (not UTC). */
+function toDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 // ── Cuti recommendation engine ────────────────────────────────────────────────
 type CutiRec = {
   cutiDates: string[];
@@ -30,7 +35,7 @@ function computeCutiRecs(year: number, month: number): CutiRec[] {
     for (let d = 1; d <= dim; d++) {
       const dt = new Date(year, m, d);
       const dow = dt.getDay();
-      if (dow === 0 || dow === 6) runExtSet.add(dt.toISOString().split('T')[0]);
+      if (dow === 0 || dow === 6) runExtSet.add(toDateStr(dt));
     }
   }
   HOLIDAYS_2026.forEach(h => {
@@ -51,13 +56,13 @@ function computeCutiRecs(year: number, month: number): CutiRec[] {
     const tempSet = new Set([...runExtSet, ...allDates]);
     const anchor = allDates[0];
     let cur = new Date(anchor + 'T00:00:00');
-    while (tempSet.has(new Date(cur.getTime() - 86400000).toISOString().split('T')[0]))
+    while (tempSet.has(toDateStr(new Date(cur.getTime() - 86400000))))
       cur = new Date(cur.getTime() - 86400000);
-    const start = cur.toISOString().split('T')[0];
+    const start = toDateStr(cur);
     cur = new Date(anchor + 'T00:00:00');
-    while (tempSet.has(new Date(cur.getTime() + 86400000).toISOString().split('T')[0]))
+    while (tempSet.has(toDateStr(new Date(cur.getTime() + 86400000))))
       cur = new Date(cur.getTime() + 86400000);
-    const end = cur.toISOString().split('T')[0];
+    const end = toDateStr(cur);
     const days = Math.round((new Date(end + 'T00:00:00').getTime() - new Date(start + 'T00:00:00').getTime()) / 86400000) + 1;
     return { days, start, end };
   }
@@ -69,7 +74,7 @@ function computeCutiRecs(year: number, month: number): CutiRec[] {
 
     const addCandidate = (offset: number) => {
       const d = new Date(hDate.getTime() + offset * 86400000);
-      const str = d.toISOString().split('T')[0];
+      const str = toDateStr(d);
       if (!nonWorking.has(str)) candidates.push(str);
     };
 
@@ -178,7 +183,7 @@ export default function CalendarPage() {
     const dates: string[] = [];
     const cur = new Date(start);
     const end = new Date(lw.endDate + 'T00:00:00');
-    while (cur <= end) { dates.push(cur.toISOString().split('T')[0]); cur.setDate(cur.getDate() + 1); }
+    while (cur <= end) { dates.push(toDateStr(cur)); cur.setDate(cur.getDate() + 1); }
     setHighlighted(dates); setCutiHighlight([]);
     setTimeout(() => document.getElementById('calendar-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
   }
@@ -189,7 +194,7 @@ export default function CalendarPage() {
     const dates: string[] = [];
     const cur = new Date(start);
     const end = new Date(rec.endDate + 'T00:00:00');
-    while (cur <= end) { dates.push(cur.toISOString().split('T')[0]); cur.setDate(cur.getDate() + 1); }
+    while (cur <= end) { dates.push(toDateStr(cur)); cur.setDate(cur.getDate() + 1); }
     setHighlighted(dates);
     setCutiHighlight(rec.cutiDates);
     setTimeout(() => document.getElementById('calendar-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
@@ -255,9 +260,14 @@ export default function CalendarPage() {
                 let cellLabel: string | null = null;
 
                 if (isCuti) {
+                  // Cuti tahunan — always blue, even inside a highlighted range
                   bg = 'rgba(25,118,210,0.13)'; numColor = '#1264b0'; cellLabel = 'CUTI';
+                } else if (isHighlight && isCutiBersama) {
+                  // Cuti bersama inside a highlighted LW range — keep green identity
+                  bg = '#1b6d24'; numColor = '#fff'; cellLabel = 'CB';
                 } else if (isHighlight) {
-                  bg = 'var(--primary)'; numColor = '#fff';
+                  // National holiday or regular weekend inside highlighted range — red
+                  bg = 'var(--primary)'; numColor = '#fff'; cellLabel = isHoliday ? 'LN' : null;
                 } else if (isHoliday && isCutiBersama) {
                   bg = 'rgba(27,109,36,0.13)'; numColor = '#1b6d24'; cellLabel = 'CB';
                 } else if (isHoliday) {
@@ -433,6 +443,41 @@ export default function CalendarPage() {
         {/* ════ RIGHT COLUMN ════ */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
 
+          {/* ── Long Weekend Alert — semua selama 2026 ── */}
+          <div>
+            <h3 className="headline" style={{ fontSize: 18, fontWeight: 800, marginBottom: 20 }}>Long Weekend Alert 🚀</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {LONG_WEEKENDS_2026.map((lw, i) => {
+                const isPast  = new Date(lw.endDate + 'T00:00:00') < today;
+                const isNext  = !isPast && (i === 0 || LONG_WEEKENDS_2026.slice(0, i).every(x => new Date(x.endDate + 'T00:00:00') < today));
+                // Determine if any cuti is needed to reach this LW (has cuti_bersama in range)
+                const hasCuti = lw.holidays.some(h => h.type.includes('cuti_bersama'));
+                return (
+                  <div
+                    key={i}
+                    onClick={() => handleLWClick(lw)}
+                    style={{ background: isNext ? 'var(--surface-container)' : 'var(--surface-container-low)', borderRadius: 'var(--radius-md)', padding: '16px 18px', cursor: 'pointer', opacity: isPast ? 0.45 : 1, transition: 'all 0.2s ease', boxShadow: isNext ? 'var(--shadow-hover)' : 'var(--shadow-ambient)' }}
+                    className={!isPast ? 'hover-scale' : ''}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, color: hasCuti ? 'var(--tertiary)' : 'var(--secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        {hasCuti ? '⚠️ Perlu Cuti' : '🟢 Aman'}
+                        {isNext && <span style={{ background: 'var(--primary-container)', color: '#fff', fontSize: 9, padding: '2px 8px', borderRadius: 'var(--radius-full)', marginLeft: 6 }}>NEXT</span>}
+                      </span>
+                      <span style={{ background: 'var(--primary)', color: '#fff', fontSize: 11, fontWeight: 900, padding: '4px 10px', borderRadius: 'var(--radius-full)' }}>
+                        {lw.totalDays} hari
+                      </span>
+                    </div>
+                    <p className="headline" style={{ fontSize: 15, fontWeight: 800, marginBottom: 4, color: 'var(--on-surface)' }}>{lw.label}</p>
+                    <p style={{ fontSize: 12, color: 'var(--on-surface-variant)', fontWeight: 600 }}>
+                      {formatLongWeekendRange(lw)}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* ── Inspirasi Liburan (top 3 sesuai onboarding) ── */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
@@ -469,41 +514,6 @@ export default function CalendarPage() {
                   </div>
                 ))
               }
-            </div>
-          </div>
-
-          {/* ── Long Weekend Alert — semua selama 2026 ── */}
-          <div>
-            <h3 className="headline" style={{ fontSize: 18, fontWeight: 800, marginBottom: 20 }}>Long Weekend Alert 🚀</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {LONG_WEEKENDS_2026.map((lw, i) => {
-                const isPast  = new Date(lw.endDate + 'T00:00:00') < today;
-                const isNext  = !isPast && (i === 0 || LONG_WEEKENDS_2026.slice(0, i).every(x => new Date(x.endDate + 'T00:00:00') < today));
-                // Determine if any cuti is needed to reach this LW (has cuti_bersama in range)
-                const hasCuti = lw.holidays.some(h => h.type.includes('cuti_bersama'));
-                return (
-                  <div
-                    key={i}
-                    onClick={() => handleLWClick(lw)}
-                    style={{ background: isNext ? 'var(--surface-container)' : 'var(--surface-container-low)', borderRadius: 'var(--radius-md)', padding: '16px 18px', cursor: 'pointer', opacity: isPast ? 0.45 : 1, transition: 'all 0.2s ease', boxShadow: isNext ? 'var(--shadow-hover)' : 'var(--shadow-ambient)' }}
-                    className={!isPast ? 'hover-scale' : ''}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, color: hasCuti ? 'var(--tertiary)' : 'var(--secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        {hasCuti ? '⚠️ Perlu Cuti' : '🟢 Aman'}
-                        {isNext && <span style={{ background: 'var(--primary-container)', color: '#fff', fontSize: 9, padding: '2px 8px', borderRadius: 'var(--radius-full)', marginLeft: 6 }}>NEXT</span>}
-                      </span>
-                      <span style={{ background: 'var(--primary)', color: '#fff', fontSize: 11, fontWeight: 900, padding: '4px 10px', borderRadius: 'var(--radius-full)' }}>
-                        {lw.totalDays} hari
-                      </span>
-                    </div>
-                    <p className="headline" style={{ fontSize: 15, fontWeight: 800, marginBottom: 4, color: 'var(--on-surface)' }}>{lw.label}</p>
-                    <p style={{ fontSize: 12, color: 'var(--on-surface-variant)', fontWeight: 600 }}>
-                      {formatLongWeekendRange(lw)}
-                    </p>
-                  </div>
-                );
-              })}
             </div>
           </div>
 
