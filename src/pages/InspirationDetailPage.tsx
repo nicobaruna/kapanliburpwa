@@ -120,7 +120,7 @@ export default function InspirationDetailPage() {
 
       {/* Cost summary */}
       <div style={{ margin: '4px 20px 24px', background: dest.canAfford ? 'var(--surface-container-low)' : 'rgba(158,0,31,0.06)', borderRadius: 16, padding: '18px 20px', border: dest.canAfford ? 'none' : '1.5px solid rgba(158,0,31,0.2)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: dest.isRoadTrip && dest.roadTripDetails ? 16 : 0 }}>
           <div>
             <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--on-surface-variant)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Estimasi Total</p>
             <p style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: 28, fontWeight: 900, color: dest.canAfford ? 'var(--on-surface)' : 'var(--primary)' }}>
@@ -128,9 +128,6 @@ export default function InspirationDetailPage() {
             </p>
           </div>
           <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span style={{ fontSize: 12, color: 'var(--on-surface-variant)' }}>
-              ✈️ {dest.flightPrice === 0 ? 'Roadtrip' : `${formatCurrency(dest.flightPrice)}/org`}
-            </span>
             <span style={{ fontSize: 12, color: 'var(--on-surface-variant)' }}>
               🛏️ {formatCurrency(dest.hotelPerNight)}/malam
             </span>
@@ -140,6 +137,35 @@ export default function InspirationDetailPage() {
             }
           </div>
         </div>
+
+        {dest.isRoadTrip && dest.roadTripDetails && (
+          <div style={{ borderTop: '1px dashed var(--outline-variant)', paddingTop: 14 }}>
+            <p style={{ fontSize: 11, fontWeight: 800, color: '#166534', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>🚗 Rincian Biaya Roadtrip</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+              <div style={{ background: '#fff', borderRadius: 12, padding: '10px 14px' }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--on-surface-variant)', marginBottom: 4 }}>⛽ Bensin (Pulang-Pergi)</p>
+                <p style={{ fontSize: 16, fontWeight: 900 }}>{formatCurrency(dest.roadTripDetails.fuelCostTotal)}</p>
+                <p style={{ fontSize: 11, color: 'var(--on-surface-variant)', marginTop: 2 }}>
+                  {dest.roadTripDetails.litersNeeded.toFixed(1)} L × Rp{(dest.roadTripDetails.pertalitePerLiter / 1000).toFixed(0)}k · konsumsi 1:10
+                </p>
+              </div>
+              <div style={{ background: '#fff', borderRadius: 12, padding: '10px 14px' }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--on-surface-variant)', marginBottom: 4 }}>🛣️ Tol (Pulang-Pergi)</p>
+                <p style={{ fontSize: 16, fontWeight: 900 }}>{dest.roadTripDetails.tollCostTotal > 0 ? formatCurrency(dest.roadTripDetails.tollCostTotal) : 'Gratis'}</p>
+                <p style={{ fontSize: 11, color: 'var(--on-surface-variant)', marginTop: 2 }}>
+                  Jarak {dest.roadTripDetails.distanceKm} km PP
+                </p>
+              </div>
+            </div>
+            <div style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 12, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 700, color: '#166534' }}>Total Biaya Roadtrip</p>
+                <p style={{ fontSize: 11, color: '#166534', opacity: 0.7 }}>Bensin + Tol (per mobil)</p>
+              </div>
+              <p style={{ fontSize: 20, fontWeight: 900, color: '#166534' }}>{formatCurrency(dest.roadTripDetails.totalRoadTripCost)}</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Itinerary */}

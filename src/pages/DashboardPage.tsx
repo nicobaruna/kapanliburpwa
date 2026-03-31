@@ -3,10 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import {
   getNextHoliday, getUpcomingHolidays, getNextLongWeekend,
-  getDaysUntil, formatDate, formatLongWeekendRange,
+  getDaysUntil, formatLongWeekendRange,
 } from '../utils/dateUtils';
 import type { Holiday, LongWeekend } from '../data/holidays2026';
 import { getRecommendations, RecommendationResult, formatCurrency } from '../services/api';
+import {
+  isReminderEnabled, enableReminders, disableReminders, checkAndFireReminders,
+} from '../services/ReminderService';
 
 export default function DashboardPage() {
   const { user } = useUser();
@@ -15,15 +18,15 @@ export default function DashboardPage() {
   const [upcoming, setUpcoming] = useState<Holiday[]>([]);
   const [longWeekends, setLongWeekends] = useState<LongWeekend[]>([]);
   const [daysUntil, setDaysUntil] = useState<number | null>(null);
-  
   const [inspirations, setInspirations] = useState<RecommendationResult[]>([]);
+  const [reminderOn, setReminderOn] = useState(false);
+  const [reminderToast, setReminderToast] = useState('');
 
   useEffect(() => {
     const nextH = getNextHoliday();
     setNextHoliday(nextH);
     if (nextH) setDaysUntil(getDaysUntil(nextH.date));
-    
-    // Get next 3 long weekends for the alerts
+
     let currentLW = getNextLongWeekend();
     const lws = [];
     if (currentLW) {
@@ -31,25 +34,81 @@ export default function DashboardPage() {
       lws.push({ ...currentLW, label: 'Kenaikan Isa Almasih', startDate: '2026-05-14', endDate: '2026-05-17', totalDays: 4, holidays: [] });
     }
     setLongWeekends(lws);
-    
-    setUpcoming(getUpcomingHolidays(4)); // Next 4 holidays
+    setUpcoming(getUpcomingHolidays(4));
 
-    // Fetch live recommendations for main section
-    const budget = window.localStorage.getItem('kapanlibur_budget') ? parseInt(window.localStorage.getItem('kapanlibur_budget') || '4500000') : 4500000;
-    getRecommendations(budget).then(res => {
-       setInspirations(res.slice(0, 4)); // Ambil Top 4 sekarang di kolom utama
-    });
+    const budget = window.localStorage.getItem('kapanlibur_budget')
+      ? parseInt(window.localStorage.getItem('kapanlibur_budget') || '4500000')
+      : 4500000;
+    getRecommendations(budget).then(res => setInspirations(res.slice(0, 4)));
+
+    // Sync reminder toggle state and fire any pending reminders
+    setReminderOn(isReminderEnabled());
+    checkAndFireReminders();
   }, []);
+
+  async function handleReminderToggle() {
+    if (reminderOn) {
+      disableReminders();
+      setReminderOn(false);
+      showToast('🔕 Pengingat dinonaktifkan');
+    } else {
+      const result = await enableReminders();
+      if (result === 'granted') {
+        setReminderOn(true);
+        showToast('🔔 Pengingat aktif! Kamu akan diberitahu H-5 sebelum libur.');
+        checkAndFireReminders();
+      } else if (result === 'denied') {
+        showToast('❌ Izin notifikasi ditolak. Aktifkan di pengaturan browser.');
+      } else {
+        showToast('❌ Browser tidak mendukung notifikasi.');
+      }
+    }
+  }
+
+  function showToast(msg: string) {
+    setReminderToast(msg);
+    setTimeout(() => setReminderToast(''), 3500);
+  }
 
   return (
     <div className="page" style={{ padding: '0 32px 100px', maxWidth: '1440px', margin: '0 auto' }}>
       
-      {/* Header aligned to match image top */}
+      {/* Header */}
       <header style={{ padding: '24px 0 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <h1 className="headline" style={{ fontSize: 24, fontWeight: 900, color: 'var(--on-surface)' }}>Dashboard</h1>
-          </div>
+        <h1 className="headline" style={{ fontSize: 24, fontWeight: 900, color: 'var(--on-surface)' }}>Dashboard</h1>
+
+        <button
+          onClick={handleReminderToggle}
+          title={reminderOn ? 'Nonaktifkan pengingat' : 'Aktifkan pengingat H-5'}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '10px 18px', borderRadius: 'var(--radius-full)',
+            background: reminderOn ? 'var(--primary-container)' : 'var(--surface-container-high)',
+            color: reminderOn ? '#fff' : 'var(--on-surface-variant)',
+            border: reminderOn ? 'none' : '1.5px solid var(--outline-variant)',
+            fontWeight: 700, fontSize: 13, cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+            {reminderOn ? 'notifications_active' : 'notifications_none'}
+          </span>
+          {reminderOn ? 'Pengingat Aktif' : 'Aktifkan Pengingat'}
+        </button>
       </header>
+
+      {/* Toast */}
+      {reminderToast && (
+        <div style={{
+          position: 'fixed', bottom: 90, left: '50%', transform: 'translateX(-50%)',
+          background: '#1a1a1a', color: '#fff', padding: '12px 20px',
+          borderRadius: 'var(--radius-full)', fontSize: 13, fontWeight: 600,
+          zIndex: 9999, whiteSpace: 'nowrap', boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+          animation: 'slideUp 0.25s ease',
+        }}>
+          {reminderToast}
+        </div>
+      )}
 
       {/* Main Grid: Left Column (Main) and Right Column (Sidebar) */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr minmax(280px, 340px)', gap: 40, alignItems: 'start' }}>
@@ -120,16 +179,36 @@ export default function DashboardPage() {
                 </>
               ) : (
                 inspirations.map((dest) => (
-                  <div key={dest.id} onClick={() => navigate('/inspiration')} style={{ borderRadius: 24, overflow: 'hidden', position: 'relative', cursor: 'pointer', height: 260 }} className="hover-scale">
+                  <div
+                    key={dest.id}
+                    onClick={() => navigate(`/inspiration/${dest.id}`)}
+                    style={{ borderRadius: 24, overflow: 'hidden', position: 'relative', cursor: 'pointer', height: 260 }}
+                    className="hover-scale"
+                  >
                     <img src={dest.image} alt={dest.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)' }} />
-                    <button style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(4px)', border: 'none', width: 32, height: 32, borderRadius: 16, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>favorite</span>
-                    </button>
+
+                    {/* Top badge */}
+                    <div style={{ position: 'absolute', top: 14, left: 14, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      {dest.dynamicTags.slice(0, 2).map((t, i) => {
+                        const bg = t.type === 'danger' ? 'var(--primary-container)' : t.type === 'success' ? '#97E4A8' : 'rgba(255,255,255,0.85)';
+                        const color = t.type === 'danger' ? '#fff' : t.type === 'success' ? '#0F5120' : 'var(--primary-container)';
+                        return (
+                          <span key={i} style={{ background: bg, color, fontSize: 9, fontWeight: 800, padding: '3px 8px', borderRadius: 8, letterSpacing: 0.5 }}>
+                            {t.label}
+                          </span>
+                        );
+                      })}
+                    </div>
+
                     <div style={{ position: 'absolute', bottom: 20, left: 24, right: 24 }}>
-                      <p style={{ fontSize: 9, fontWeight: 800, color: 'var(--primary-container)', background: 'rgba(255,255,255,0.9)', padding: '2px 8px', borderRadius: 8, display: 'inline-block', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>⭐ Top 100% Match</p>
-                      <h3 className="headline" style={{ fontSize: 18, fontWeight: 900, color: '#fff', lineHeight: 1.2 }}>{dest.name}</h3>
-                      <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>Est: {formatCurrency(dest.estTotalCost)}</p>
+                      <h3 className="headline" style={{ fontSize: 18, fontWeight: 900, color: '#fff', lineHeight: 1.2, marginBottom: 4 }}>{dest.name}</h3>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>{dest.location}</p>
+                        <p style={{ fontSize: 13, fontWeight: 800, color: dest.canAfford ? '#97E4A8' : '#FADB5F' }}>
+                          {formatCurrency(dest.estTotalCost)}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 ))

@@ -68,7 +68,7 @@ export default function FinancialPlannerPage() {
 
       // Fetch inspiration recommendations factoring in people, days, and style
       try {
-        const recs = await getRecommendations(budget, people, days, style);
+        const recs = await getRecommendations(budget, people, days, style, origin);
         setInspirationResults(recs);
       } catch {
         setInspirationResults([]);
@@ -306,16 +306,41 @@ export default function FinancialPlannerPage() {
                             <span className="material-symbols-outlined" style={{ fontSize: 13 }}>location_on</span> {d.location}
                           </p>
 
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
-                            <div style={{ background: 'var(--surface-container-low)', padding: '10px 12px', borderRadius: 'var(--radius-md)' }}>
-                              <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--primary-container)', textTransform: 'uppercase', marginBottom: 2 }}>✈️ Tiket PP × {people}</p>
-                              <p style={{ fontSize: 13, fontWeight: 800 }}>{d.flightPrice === 0 ? 'Roadtrip' : formatCurrency(d.totalFlightCost)}</p>
+                          {d.isRoadTrip && d.roadTripDetails ? (
+                            <div style={{ marginBottom: 12 }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+                                <div style={{ background: 'var(--surface-container-low)', padding: '10px 12px', borderRadius: 'var(--radius-md)' }}>
+                                  <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--primary-container)', textTransform: 'uppercase', marginBottom: 2 }}>⛽ Bensin PP</p>
+                                  <p style={{ fontSize: 13, fontWeight: 800 }}>{formatCurrency(d.roadTripDetails.fuelCostTotal)}</p>
+                                  <p style={{ fontSize: 10, color: 'var(--on-surface-variant)', marginTop: 1 }}>{d.roadTripDetails.litersNeeded.toFixed(1)} L · Rp10k/L</p>
+                                </div>
+                                <div style={{ background: 'var(--surface-container-low)', padding: '10px 12px', borderRadius: 'var(--radius-md)' }}>
+                                  <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--primary-container)', textTransform: 'uppercase', marginBottom: 2 }}>🛣️ Tol PP</p>
+                                  <p style={{ fontSize: 13, fontWeight: 800 }}>{d.roadTripDetails.tollCostTotal > 0 ? formatCurrency(d.roadTripDetails.tollCostTotal) : 'Gratis'}</p>
+                                  <p style={{ fontSize: 10, color: 'var(--on-surface-variant)', marginTop: 1 }}>{d.roadTripDetails.distanceKm} km · PP</p>
+                                </div>
+                              </div>
+                              <div style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 'var(--radius-md)', padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: '#166534' }}>🚗 Total Biaya Roadtrip</span>
+                                <span style={{ fontSize: 13, fontWeight: 900, color: '#166534' }}>{formatCurrency(d.roadTripDetails.totalRoadTripCost)}</span>
+                              </div>
+                              <div style={{ background: 'var(--surface-container-low)', padding: '10px 12px', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between' }}>
+                                <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--primary-container)', textTransform: 'uppercase' }}>🛏️ Hotel × {days} malam</p>
+                                <p style={{ fontSize: 13, fontWeight: 800 }}>{formatCurrency(d.totalHotelCost)}</p>
+                              </div>
                             </div>
-                            <div style={{ background: 'var(--surface-container-low)', padding: '10px 12px', borderRadius: 'var(--radius-md)' }}>
-                              <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--primary-container)', textTransform: 'uppercase', marginBottom: 2 }}>🛏️ Hotel × {days} malam</p>
-                              <p style={{ fontSize: 13, fontWeight: 800 }}>{formatCurrency(d.totalHotelCost)}</p>
+                          ) : (
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                              <div style={{ background: 'var(--surface-container-low)', padding: '10px 12px', borderRadius: 'var(--radius-md)' }}>
+                                <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--primary-container)', textTransform: 'uppercase', marginBottom: 2 }}>✈️ Tiket PP × {people}</p>
+                                <p style={{ fontSize: 13, fontWeight: 800 }}>{formatCurrency(d.totalFlightCost)}</p>
+                              </div>
+                              <div style={{ background: 'var(--surface-container-low)', padding: '10px 12px', borderRadius: 'var(--radius-md)' }}>
+                                <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--primary-container)', textTransform: 'uppercase', marginBottom: 2 }}>🛏️ Hotel × {days} malam</p>
+                                <p style={{ fontSize: 13, fontWeight: 800 }}>{formatCurrency(d.totalHotelCost)}</p>
+                              </div>
                             </div>
-                          </div>
+                          )}
 
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed var(--outline-variant)', paddingTop: 12, marginBottom: 14 }}>
                             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--on-surface-variant)' }}>Estimasi Total ({people} org, {days} hr)</span>

@@ -263,28 +263,43 @@ export async function getRecommendations(
   people: number = 2,
   days: number = 3,
   style: TripStyle = 'balance',
+  origin: string = 'jakarta',
 ): Promise<RecommendationResult[]> {
   const nextLW = getNextLongWeekend();
-
   const outDate = nextLW ? nextLW.startDate : new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0];
   const inDate  = nextLW ? nextLW.endDate   : new Date(Date.now() + 86400000 * 10).toISOString().split('T')[0];
 
   const results = await Promise.all(BASE_DESTINATIONS.map(async (baseDest) => {
-    const rawFlight = await fetchFlightPrice(baseDest.id, outDate, inDate);
-    const image     = await fetchImage(baseDest.searchQuery);
+    const isRoadTrip = ROAD_TRIP_IDS.has(baseDest.id);
+    const rawFlight  = await fetchFlightPrice(baseDest.id, outDate, inDate);
+    const image      = await fetchImage(baseDest.searchQuery);
     const weatherForecast: 'Sunny' | 'Rainy' = Math.random() > 0.3 ? 'Sunny' : 'Rainy';
 
-    const fallbacks: Record<string, number> = {
-      DPS: 1200000, YIA: 800000, LBJ: 2500000, MLG: 1100000,
-      LOP: 1300000, KNO: 1900000, SOQ: 4500000, BDO: 200000,
+    const flightFallbacks: Record<string, number> = {
+      DPS: 1_200_000, YIA: 800_000, LBJ: 2_500_000, MLG: 1_100_000,
+      LOP: 1_300_000, KNO: 1_900_000, SOQ: 4_500_000,
     };
-    // Harga tiket per orang (PP). Kalikan dengan jumlah orang.
-    const pricePerPerson  = rawFlight || fallbacks[baseDest.id];
-    const totalFlightCost = pricePerPerson * people;
-    // Hotel per malam untuk seluruh grup. Kalikan dengan durasi.
-    const totalHotelCost  = baseDest.hotelPerNight * days;
-    const estTotalCost    = totalFlightCost + totalHotelCost;
-    const canAfford       = estTotalCost <= userBudget;
+
+    let totalFlightCost: number;
+    let pricePerPerson: number;
+    let roadTripDetails: RoadTripDetails | undefined;
+
+    if (isRoadTrip) {
+      // Biaya transportasi = bensin PP + tol PP (per mobil, bukan per orang)
+      roadTripDetails = calcRoadTrip(baseDest.id, origin) ?? {
+        distanceKm: 150, litersNeeded: 30, pertalitePerLiter: PERTALITE_PER_LITER,
+        fuelCostTotal: 300_000, tollCostTotal: 110_000, totalRoadTripCost: 410_000,
+      };
+      totalFlightCost = roadTripDetails.totalRoadTripCost;
+      pricePerPerson  = 0; // tidak ada tiket
+    } else {
+      pricePerPerson  = rawFlight || flightFallbacks[baseDest.id] || 0;
+      totalFlightCost = pricePerPerson * people;
+    }
+
+    const totalHotelCost = baseDest.hotelPerNight * days;
+    const estTotalCost   = totalFlightCost + totalHotelCost;
+    const canAfford      = estTotalCost <= userBudget;
 
     const tags = [...baseDest.baseTags] as { label: string; type: 'normal' | 'danger' | 'warning' | 'success' }[];
     let score = 0;
@@ -293,40 +308,33 @@ export async function getRecommendations(
     if (canAfford) {
       tags.push({ label: '💰 Pas Budget', type: 'success' });
     } else {
-      // Destinasi melebihi budget mendapat penalti besar — tetap muncul di
-      // bawah daftar sebagai referensi tapi tidak direkomendasikan.
       score -= 60;
       tags.push({ label: '⚠️ Melebihi Budget', type: 'danger' });
     }
 
     // ── Skor berdasarkan gaya liburan ────────────────────────────────────
     if (style === 'hemat') {
-      // Utamakan harga serendah mungkin
       const ratio = estTotalCost / userBudget;
       if (ratio <= 0.5)      score += 50;
       else if (ratio <= 0.7) score += 35;
       else if (ratio <= 0.9) score += 20;
       else if (ratio <= 1.0) score += 5;
-      // Penalti hotel mahal
       if (baseDest.hotelPerNight > 1_000_000) score -= 25;
       if (baseDest.hotelPerNight > 1_800_000) score -= 25;
+      if (isRoadTrip) score += 15; // road trip biasanya lebih hemat
     } else if (style === 'luxury') {
-      // Utamakan kenyamanan — hotel premium dan destinasi prestisius
-      if (baseDest.hotelPerNight >= 2_500_000) score += 50;
+      if (baseDest.hotelPerNight >= 2_500_000)      score += 50;
       else if (baseDest.hotelPerNight >= 1_500_000) score += 30;
       else if (baseDest.hotelPerNight >= 1_000_000) score += 10;
-      else score -= 30; // Hotel murah tidak cocok untuk luxury
-      // Bonus destinasi premium (Raja Ampat, Labuan Bajo, Bali)
+      else score -= 30;
       if (['SOQ', 'LBJ', 'DPS'].includes(baseDest.id)) score += 20;
       if (canAfford) score += 20;
     } else {
-      // balance: seimbangkan harga & durasi perjalanan
+      // balance
       if (canAfford) score += 30;
-      // Bonus jika durasi terbang cocok dengan panjang liburan
-      if (baseDest.flightDurationHours <= 2 && days <= 3)       score += 20;
-      else if (baseDest.flightDurationHours > 2 && days > 3)    score += 20;
-      else if (baseDest.flightDurationHours > 3 && days <= 3)   score -= 20;
-      // Sisa budget setelah biaya pokok (kenyamanan)
+      if (baseDest.flightDurationHours <= 2 && days <= 3)     score += 20;
+      else if (baseDest.flightDurationHours > 2 && days > 3)  score += 20;
+      else if (baseDest.flightDurationHours > 3 && days <= 3) score -= 20;
       const remaining = userBudget - estTotalCost;
       if (canAfford && remaining > 1_000_000) score += 10;
     }
@@ -355,11 +363,12 @@ export async function getRecommendations(
       totalFlightCost,
       totalHotelCost,
       canAfford,
+      isRoadTrip,
+      roadTripDetails,
       dynamicTags: tags,
     } as RecommendationResult;
   }));
 
-  // Urutkan: skor tertinggi dulu; yang tidak terjangkau di paling bawah
   return results.sort((a, b) => b.matchScore - a.matchScore);
 }
 
