@@ -56,15 +56,21 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   function login(name: string) {
     const profile: UserProfile = { name };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
-    setUser(profile);
-    setAuthState('onboarding');
+    const savedPrefs = localStorage.getItem(PREFS_KEY);
+    const prefs = savedPrefs ? JSON.parse(savedPrefs) : {};
+    const merged = { ...profile, ...prefs };
+    setUser(merged);
+    setAuthState(merged.vacationType ? 'authenticated' : 'onboarding');
   }
 
   function loginWithGoogle(profile: { name: string; email: string; photo?: string }) {
     const userProfile: UserProfile = { name: profile.name, email: profile.email, photo: profile.photo };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(userProfile));
-    setUser(userProfile);
-    setAuthState('onboarding');
+    const savedPrefs = localStorage.getItem(PREFS_KEY);
+    const prefs = savedPrefs ? JSON.parse(savedPrefs) : {};
+    const merged = { ...userProfile, ...prefs };
+    setUser(merged);
+    setAuthState(merged.vacationType ? 'authenticated' : 'onboarding');
   }
 
   function logout() {

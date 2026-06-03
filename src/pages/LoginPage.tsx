@@ -20,34 +20,55 @@ export default function LoginPage() {
       display: 'flex',
       flexDirection: 'column',
     }}>
-      {/* Hero banner */}
+      {/* Hero banner - Editorial Style */}
       <div style={{
-        background: 'linear-gradient(160deg, var(--primary) 0%, var(--primary-container) 60%, #E8401C 100%)',
-        padding: '56px 28px 48px',
+        background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%)',
+        padding: 'var(--spacing-16) var(--spacing-12) var(--spacing-12)',
         position: 'relative',
         overflow: 'hidden',
+        textAlign: 'center'
       }}>
-        {/* Decorative circles */}
-        <div style={{ position: 'absolute', top: -40, right: -40, width: 180, height: 180, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
-        <div style={{ position: 'absolute', bottom: -20, left: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.04)' }} />
+        {/* Decorative elements - Asymmetric & overlapping */}
+        <div style={{ position: 'absolute', top: -60, right: -60, width: 240, height: 240, borderRadius: 'var(--radius-full)', background: 'rgba(255,255,255,0.06)' }} />
+        <div style={{ position: 'absolute', bottom: -30, left: -30, width: 140, height: 140, borderRadius: 'var(--radius-full)', background: 'rgba(255,255,255,0.04)' }} />
 
-        <div style={{ fontSize: 64, marginBottom: 16, filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.2))' }}>🇮🇩</div>
-        <h1 style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', color: '#fff', fontSize: 36, fontWeight: 900, letterSpacing: -0.5, lineHeight: 1.1, marginBottom: 10 }}>
+        <div style={{ fontSize: 72, marginBottom: 24, filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.15))' }}>🇮🇩</div>
+        <h1 className="headline" style={{ color: '#fff', fontSize: 44, fontWeight: 900, letterSpacing: -2, lineHeight: 1, marginBottom: 12 }}>
           Kapan<br />Libur?
         </h1>
-        <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 15 }}>
+        <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 16, maxWidth: 320, margin: '0 auto' }}>
           Kalender libur nasional &amp; perencana liburan Indonesia 2026
         </p>
       </div>
 
-      {/* Login card */}
-      <div style={{ flex: 1, background: 'var(--surface)', borderTopLeftRadius: 28, borderTopRightRadius: 28, marginTop: -20, padding: '32px 24px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      {/* Login card area - Tonal Layering (No-Line) */}
+      <div style={{ 
+        flex: 1, 
+        background: 'var(--surface)', 
+        borderTopLeftRadius: 'var(--radius-xl)', 
+        borderTopRightRadius: 'var(--radius-xl)', 
+        marginTop: -48, 
+        padding: 'var(--spacing-12) 24px', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center',
+        position: 'relative',
+        zIndex: 2
+      }}>
         <div style={{ width: '100%', maxWidth: 400 }}>
-          <h2 style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: 22, fontWeight: 800, marginBottom: 6 }}>Selamat datang</h2>
-          <p style={{ fontSize: 14, color: 'var(--on-surface-variant)', marginBottom: 28 }}>Masuk untuk mulai melihat jadwal liburanmu</p>
+          <h2 className="headline" style={{ fontSize: 28, fontWeight: 900, marginBottom: 8, letterSpacing: -0.5 }}>Selamat datang</h2>
+          <p style={{ fontSize: 15, color: 'var(--on-surface-variant)', marginBottom: 40 }}>Masuk untuk mulai melihat jadwal liburanmu</p>
 
-          {/* Google login */}
-          <div style={{ marginBottom: 6 }}>
+          {/* Google login container with Ambient Shadow */}
+          <div style={{ 
+            marginBottom: 12, 
+            background: 'var(--surface-container-lowest)', 
+            borderRadius: 'var(--radius-md)',
+            padding: 8,
+            boxShadow: 'var(--shadow-ambient)',
+            display: 'flex',
+            justifyContent: 'center'
+          }}>
             <GoogleLogin
               onSuccess={cr => {
                 if (!cr.credential) return;
@@ -57,56 +78,72 @@ export default function LoginPage() {
               onError={() => setGoogleError('Login Google gagal. Coba lagi.')}
               width="352"
               text="signin_with"
-              shape="rectangular"
+              shape="pill"
               logo_alignment="left"
             />
           </div>
-          {googleError && <p style={{ fontSize: 12, color: 'var(--primary)', textAlign: 'center', marginBottom: 8 }}>{googleError}</p>}
+          {googleError && <p style={{ fontSize: 12, color: 'var(--primary)', textAlign: 'center', marginBottom: 16 }}>{googleError}</p>}
 
-          {/* Divider */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0' }}>
-            <div style={{ flex: 1, height: 1, background: 'var(--outline-variant)' }} />
-            <span style={{ fontSize: 12, color: 'var(--on-surface-variant)', fontWeight: 600 }}>atau</span>
-            <div style={{ flex: 1, height: 1, background: 'var(--outline-variant)' }} />
+          {/* Separator - Tonal (No-Line) */}
+          <div style={{ textAlign: 'center', margin: '32px 0' }}>
+            <div style={{ background: 'var(--surface-container-low)', borderRadius: 'var(--radius-full)', display: 'inline-block', padding: '6px 20px' }}>
+              <span style={{ fontSize: 12, color: 'var(--on-surface-variant)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 2 }}>atau</span>
+            </div>
           </div>
 
-          {/* Guest form */}
+          {/* Guest form options */}
           {!showNameForm ? (
-            <button onClick={() => setShowNameForm(true)} className="btn btn-secondary btn-full" style={{ fontSize: 14, borderRadius: 'var(--radius-xl)' }}>
+            <button 
+              onClick={() => setShowNameForm(true)} 
+              className="btn btn-secondary btn-full hover-scale" 
+              style={{ fontSize: 15, padding: '18px', fontWeight: 800 }}
+            >
               Lanjut tanpa akun →
             </button>
           ) : (
-            <>
+            <div style={{ animation: 'fadeIn 0.3s ease' }}>
               <div className="form-group">
-                <label className="form-label">Nama kamu</label>
+                <label className="form-label" style={{ fontWeight: 800, letterSpacing: 0.5 }}>NAMA KAMU</label>
                 <input
                   className="form-input"
                   type="text"
                   placeholder="Misal: Budi"
+                  style={{ background: 'var(--surface-container-low)', border: 'none', padding: '18px 24px' }}
                   value={name}
                   onChange={e => setName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && name.trim() && login(name.trim())}
                   autoFocus
                 />
               </div>
-              <button className="btn btn-primary btn-full" onClick={() => name.trim() && login(name.trim())} disabled={!name.trim()}>
-                Mulai →
+              <button 
+                className="btn btn-primary btn-full shadow-lg hover-scale" 
+                onClick={() => name.trim() && login(name.trim())} 
+                disabled={!name.trim()}
+                style={{ padding: '18px', fontSize: 16, fontWeight: 900 }}
+              >
+                MULAI PETUALANGAN →
               </button>
-            </>
+            </div>
           )}
 
-          {/* Dev shortcut */}
+          {/* Dev shortcut with Tonal Layering */}
           {import.meta.env.DEV && (
             <button
               onClick={() => login('Dev User')}
-              style={{ marginTop: 24, width: '100%', background: 'transparent', border: '1.5px dashed rgba(158,0,31,0.3)', borderRadius: 12, padding: '10px', color: 'var(--primary)', fontSize: 12, fontWeight: 700, cursor: 'pointer', opacity: 0.7 }}
+              style={{ 
+                marginTop: 40, width: '100%', border: 'none', 
+                background: 'var(--surface-container-high)', borderRadius: 'var(--radius-md)', 
+                padding: '14px', color: 'var(--primary)', fontSize: 12, fontWeight: 800, 
+                cursor: 'pointer', letterSpacing: 1
+              }}
+              className="hover-scale"
             >
-              ⚡ DEV: Skip Login
+              ⚡ DEV: SKIP LOGIN
             </button>
           )}
         </div>
 
-        <p style={{ color: 'var(--on-surface-variant)', fontSize: 11, marginTop: 32, textAlign: 'center', lineHeight: 1.7, opacity: 0.7 }}>
+        <p style={{ color: 'var(--on-surface-variant)', fontSize: 12, marginTop: 'auto', paddingTop: 64, textAlign: 'center', lineHeight: 1.8, opacity: 0.6 }}>
           Data resmi Bank Indonesia 2026<br />Keputusan Bersama Menteri RI
         </p>
       </div>

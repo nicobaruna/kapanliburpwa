@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getUpcomingHolidays, getNextLongWeekend } from '../utils/dateUtils';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useUser } from '../context/UserContext';
+import { formatLongWeekendRange, getDaysUntil, formatShortDate } from '../utils/dateUtils';
+import { getRecommendations, RecommendationResult, TripStyle, formatCurrency } from '../services/api';
 import type { Holiday, LongWeekend } from '../data/holidays2026';
 import { getRecommendations, formatCurrency } from '../services/api';
 import type { RecommendationResult } from '../services/api';
@@ -34,13 +36,65 @@ export default function CalendarPage() {
   }
   // current month
   for (let i = 1; i <= daysInMonth; i++) {
-    cells.push({ day: i, type: 'normal' });
+    cells.push({
+      day: i,
+      dateStr: `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`,
+    });
   }
-  // next month filler (to complete 35 cells)
-  while (cells.length < 35) {
-    cells.push({ day: '', type: 'empty' });
+  while (cells.length % 7 !== 0) cells.push({ day: '', dateStr: '' });
+
+  const holidayMap = new Map<string, Holiday>();
+  HOLIDAYS_2026.forEach(h => holidayMap.set(h.date, h));
+
+  const holidaysThisMonth = HOLIDAYS_2026.filter(h => {
+    const d = new Date(h.date + 'T00:00:00');
+    return d.getFullYear() === calYear && d.getMonth() === calMonth;
+  }).sort((a, b) => a.date.localeCompare(b.date));
+
+  const cutiRecs = computeCutiRecs(calYear, calMonth);
+
+  function prevMonth() {
+    const d = new Date(calYear, calMonth - 1, 1);
+    setCalYear(d.getFullYear()); setCalMonth(d.getMonth());
+    setHighlighted([]); setCutiHighlight([]);
+  }
+  function nextMonth() {
+    const d = new Date(calYear, calMonth + 1, 1);
+    setCalYear(d.getFullYear()); setCalMonth(d.getMonth());
+    setHighlighted([]); setCutiHighlight([]);
   }
 
+  function handleLWClick(lw: LongWeekend) {
+    const start = new Date(lw.startDate + 'T00:00:00');
+    setCalYear(start.getFullYear()); setCalMonth(start.getMonth());
+    const dates: string[] = [];
+    const cur = new Date(start);
+    const end = new Date(lw.endDate + 'T00:00:00');
+    while (cur <= end) { dates.push(toDateStr(cur)); cur.setDate(cur.getDate() + 1); }
+    setHighlighted(dates); setCutiHighlight([]);
+    setTimeout(() => document.getElementById('calendar-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+  }
+
+  function handleCutiClick(rec: CutiRec) {
+    const start = new Date(rec.startDate + 'T00:00:00');
+    setCalYear(start.getFullYear()); setCalMonth(start.getMonth());
+    const dates: string[] = [];
+    const cur = new Date(start);
+    const end = new Date(rec.endDate + 'T00:00:00');
+    while (cur <= end) { dates.push(toDateStr(cur)); cur.setDate(cur.getDate() + 1); }
+    setHighlighted(dates);
+    setCutiHighlight(rec.cutiDates);
+    setTimeout(() => document.getElementById('calendar-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+  }
+
+  function goToHoliday(h: Holiday) {
+    const d = new Date(h.date + 'T00:00:00');
+    setCalYear(d.getFullYear()); setCalMonth(d.getMonth());
+    setHighlighted([h.date]); setCutiHighlight([]);
+    setTimeout(() => document.getElementById('calendar-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+  }
+
+  // ── Render ──
   return (
     <>
       <div className="page" style={{ padding: '0 32px 100px', maxWidth: '1440px', margin: '0 auto' }}>

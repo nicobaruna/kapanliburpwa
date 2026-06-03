@@ -19,6 +19,7 @@ export interface Destination {
   weatherForecast: 'Sunny' | 'Rainy' | 'Cloudy';
   baseTags: { label: string; type: 'normal' | 'danger' | 'warning' | 'success' }[];
   itinerary: ItineraryDay[];
+  vacationTypes: ('kota' | 'alam' | 'pantai' | 'gunung')[];
 }
 
 export type TripStyle = 'hemat' | 'balance' | 'luxury';
@@ -166,15 +167,55 @@ const KM_PER_LITER = 10;            // konsumsi BBM 1:10
 // Jarak (km) & biaya tol sekali jalan (Rp) per kota asal menuju BDO (Bandung/Lembang)
 const ROAD_TRIP_TABLE: Record<string, Record<string, { distanceKm: number; tollOneWayRp: number }>> = {
   BDO: {
-    jakarta:    { distanceKm: 150, tollOneWayRp: 55_000  },
-    bandung:    { distanceKm: 30,  tollOneWayRp: 0        },
-    surabaya:   { distanceKm: 700, tollOneWayRp: 185_000  },
-    yogyakarta: { distanceKm: 390, tollOneWayRp: 100_000  },
-    semarang:   { distanceKm: 340, tollOneWayRp: 95_000   },
-    malang:     { distanceKm: 780, tollOneWayRp: 200_000  },
-    medan:      { distanceKm: 2150, tollOneWayRp: 0        }, // jalan umum, hampir tidak feasible
-    makassar:   { distanceKm: 2500, tollOneWayRp: 0        },
-    bali:       { distanceKm: 1250, tollOneWayRp: 0        }, // via ferry
+    jakarta: { distanceKm: 150, tollOneWayRp: 55_000 },
+    bandung: { distanceKm: 30, tollOneWayRp: 0 },
+    surabaya: { distanceKm: 700, tollOneWayRp: 185_000 },
+    yogyakarta: { distanceKm: 390, tollOneWayRp: 100_000 },
+    semarang: { distanceKm: 340, tollOneWayRp: 95_000 },
+    malang: { distanceKm: 780, tollOneWayRp: 200_000 },
+    medan: { distanceKm: 2150, tollOneWayRp: 0 }, // jalan umum, hampir tidak feasible
+    makassar: { distanceKm: 2500, tollOneWayRp: 0 },
+    bali: { distanceKm: 1250, tollOneWayRp: 0 }, // via ferry
+  },
+};
+
+function calcRoadTrip(destId: string, origin: string): RoadTripDetails | null {
+  const table = ROAD_TRIP_TABLE[destId];
+  if (!table) return null;
+  const data = table[origin] ?? table['jakarta']; // fallback ke Jakarta jika origin tidak ada
+  const distanceKm = data.distanceKm;
+  const litersNeeded = (distanceKm * 2) / KM_PER_LITER; // perjalanan pulang-pergi
+  const fuelCostTotal = Math.round(litersNeeded * PERTALITE_PER_LITER);
+  const tollCostTotal = data.tollOneWayRp * 2;
+  return {
+    distanceKm,
+    litersNeeded,
+    pertalitePerLiter: PERTALITE_PER_LITER,
+    fuelCostTotal,
+    tollCostTotal,
+    totalRoadTripCost: fuelCostTotal + tollCostTotal,
+  };
+}
+
+// Road trip destination IDs — tidak ada harga tiket pesawat
+const ROAD_TRIP_IDS = new Set(['BDO']);
+
+// ── Road Trip constants ────────────────────────────────────────────────────────
+const PERTALITE_PER_LITER = 10_000; // Rp/liter (harga Pertalite 2024)
+const KM_PER_LITER = 10;            // konsumsi BBM 1:10
+
+// Jarak (km) & biaya tol sekali jalan (Rp) per kota asal menuju BDO (Bandung/Lembang)
+const ROAD_TRIP_TABLE: Record<string, Record<string, { distanceKm: number; tollOneWayRp: number }>> = {
+  BDO: {
+    jakarta: { distanceKm: 150, tollOneWayRp: 55_000 },
+    bandung: { distanceKm: 30, tollOneWayRp: 0 },
+    surabaya: { distanceKm: 700, tollOneWayRp: 185_000 },
+    yogyakarta: { distanceKm: 390, tollOneWayRp: 100_000 },
+    semarang: { distanceKm: 340, tollOneWayRp: 95_000 },
+    malang: { distanceKm: 780, tollOneWayRp: 200_000 },
+    medan: { distanceKm: 2150, tollOneWayRp: 0 }, // jalan umum, hampir tidak feasible
+    makassar: { distanceKm: 2500, tollOneWayRp: 0 },
+    bali: { distanceKm: 1250, tollOneWayRp: 0 }, // via ferry
   },
 };
 
@@ -213,7 +254,7 @@ async function fetchFlightPrice(destinationIATA: string, outDate: string, inDate
     const url = `/api/serp/search.json?engine=google_flights&departure_id=CGK&arrival_id=${destinationIATA}&outbound_date=${outDate}&return_date=${inDate}&currency=IDR&hl=id&api_key=${SERP_API_KEY}`;
     const res = await fetch(url);
     const data = await res.json();
-    
+
     if (data.best_flights && data.best_flights.length > 0) {
       const price = data.best_flights[0].price;
       flightCache[cacheKey] = price;
@@ -230,13 +271,15 @@ async function fetchFlightPrice(destinationIATA: string, outDate: string, inDate
 }
 
 // Helper untuk fetch Google Images via SerpApi Proxy
-async function fetchImage(query: string): Promise<string> {
+async function fetchImage(query: string, fallback: string): Promise<string> {
   if (imageCache[query]) return imageCache[query];
+  // Jika API key tidak ada, langsung pakai fallback per-destinasi
+  if (!SERP_API_KEY) return fallback;
   try {
     const url = `/api/serp/search.json?engine=google_images&q=${encodeURIComponent(query + ' tourism high quality')}&api_key=${SERP_API_KEY}`;
     const res = await fetch(url);
     const data = await res.json();
-    
+
     if (data.images_results && data.images_results.length > 0) {
       const img = data.images_results[0].original;
       imageCache[query] = img;
@@ -245,7 +288,7 @@ async function fetchImage(query: string): Promise<string> {
   } catch (error) {
     console.warn(`Gagal mengambil gambar untuk ${query}`, error);
   }
-  return 'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=800&q=80'; // fallback
+  return fallback;
 }
 
 /**
@@ -257,6 +300,7 @@ async function fetchImage(query: string): Promise<string> {
  *     hemat   → utamakan harga terendah
  *     balance → seimbangkan harga & kenyamanan
  *     luxury  → utamakan kenyamanan (hotel mahal, destinasi premium)
+ * - vacationType mempengaruhi bonus skor destinasi yang sesuai
  */
 export async function getRecommendations(
   userBudget: number,
@@ -267,12 +311,12 @@ export async function getRecommendations(
 ): Promise<RecommendationResult[]> {
   const nextLW = getNextLongWeekend();
   const outDate = nextLW ? nextLW.startDate : new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0];
-  const inDate  = nextLW ? nextLW.endDate   : new Date(Date.now() + 86400000 * 10).toISOString().split('T')[0];
+  const inDate = nextLW ? nextLW.endDate : new Date(Date.now() + 86400000 * 10).toISOString().split('T')[0];
 
   const results = await Promise.all(BASE_DESTINATIONS.map(async (baseDest) => {
     const isRoadTrip = ROAD_TRIP_IDS.has(baseDest.id);
-    const rawFlight  = await fetchFlightPrice(baseDest.id, outDate, inDate);
-    const image      = await fetchImage(baseDest.searchQuery);
+    const rawFlight = await fetchFlightPrice(baseDest.id, outDate, inDate);
+    const image = await fetchImage(baseDest.searchQuery);
     const weatherForecast: 'Sunny' | 'Rainy' = Math.random() > 0.3 ? 'Sunny' : 'Rainy';
 
     const flightFallbacks: Record<string, number> = {
@@ -291,18 +335,24 @@ export async function getRecommendations(
         fuelCostTotal: 300_000, tollCostTotal: 110_000, totalRoadTripCost: 410_000,
       };
       totalFlightCost = roadTripDetails.totalRoadTripCost;
-      pricePerPerson  = 0; // tidak ada tiket
+      pricePerPerson = 0; // tidak ada tiket
     } else {
-      pricePerPerson  = rawFlight || flightFallbacks[baseDest.id] || 0;
+      pricePerPerson = rawFlight || flightFallbacks[baseDest.id] || 0;
       totalFlightCost = pricePerPerson * people;
     }
 
     const totalHotelCost = baseDest.hotelPerNight * days;
-    const estTotalCost   = totalFlightCost + totalHotelCost;
-    const canAfford      = estTotalCost <= userBudget;
+    const estTotalCost = totalFlightCost + totalHotelCost;
+    const canAfford = estTotalCost <= userBudget;
 
     const tags = [...baseDest.baseTags] as { label: string; type: 'normal' | 'danger' | 'warning' | 'success' }[];
     let score = 0;
+
+    // ── Bonus berdasarkan tipe liburan user ──────────────────────────────
+    if (vacationType && baseDest.vacationTypes.includes(vacationType as 'kota' | 'alam' | 'pantai' | 'gunung')) {
+      score += 25;
+      tags.push({ label: '⭐ Sesuai Preferensi', type: 'success' });
+    }
 
     // ── Syarat utama: total biaya tidak melebihi budget ──────────────────
     if (canAfford) {
@@ -315,7 +365,7 @@ export async function getRecommendations(
     // ── Skor berdasarkan gaya liburan ────────────────────────────────────
     if (style === 'hemat') {
       const ratio = estTotalCost / userBudget;
-      if (ratio <= 0.5)      score += 50;
+      if (ratio <= 0.5) score += 50;
       else if (ratio <= 0.7) score += 35;
       else if (ratio <= 0.9) score += 20;
       else if (ratio <= 1.0) score += 5;
@@ -323,7 +373,7 @@ export async function getRecommendations(
       if (baseDest.hotelPerNight > 1_800_000) score -= 25;
       if (isRoadTrip) score += 15; // road trip biasanya lebih hemat
     } else if (style === 'luxury') {
-      if (baseDest.hotelPerNight >= 2_500_000)      score += 50;
+      if (baseDest.hotelPerNight >= 2_500_000) score += 50;
       else if (baseDest.hotelPerNight >= 1_500_000) score += 30;
       else if (baseDest.hotelPerNight >= 1_000_000) score += 10;
       else score -= 30;
@@ -332,8 +382,8 @@ export async function getRecommendations(
     } else {
       // balance
       if (canAfford) score += 30;
-      if (baseDest.flightDurationHours <= 2 && days <= 3)     score += 20;
-      else if (baseDest.flightDurationHours > 2 && days > 3)  score += 20;
+      if (baseDest.flightDurationHours <= 2 && days <= 3) score += 20;
+      else if (baseDest.flightDurationHours > 2 && days > 3) score += 20;
       else if (baseDest.flightDurationHours > 3 && days <= 3) score -= 20;
       const remaining = userBudget - estTotalCost;
       if (canAfford && remaining > 1_000_000) score += 10;
@@ -366,6 +416,7 @@ export async function getRecommendations(
       isRoadTrip,
       roadTripDetails,
       dynamicTags: tags,
+      vacationTypes: baseDest.vacationTypes,
     } as RecommendationResult;
   }));
 

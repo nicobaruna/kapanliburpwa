@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { LONG_WEEKENDS_2026 } from '../data/holidays2026';
 import { formatLongWeekendRange, getDaysUntil, countdownLabel } from '../utils/dateUtils';
 
-const ACCENT_COLORS = ['#C8102E', '#E67E22', '#27AE60', '#2980B9', '#8E44AD', '#1ABC9C', '#D35400', '#C0392B'];
+const ACCENT_COLORS = ['#C8102E', '#E67E22', '#2E7D32', '#2980B9', '#8E44AD', '#1ABC9C', '#D35400', '#C0392B'];
 
 function buildShareText(lw: typeof LONG_WEEKENDS_2026[0]) {
   const range = formatLongWeekendRange(lw);
@@ -57,7 +57,7 @@ export default function LongWeekendPage() {
 
   function renderCard(lw: typeof LONG_WEEKENDS_2026[0], index: number, isPast: boolean) {
     const daysUntil = getDaysUntil(lw.startDate);
-    const color = isPast ? 'var(--border)' : ACCENT_COLORS[index % ACCENT_COLORS.length];
+    const color = isPast ? 'var(--on-surface-variant)' : ACCENT_COLORS[index % ACCENT_COLORS.length];
     const isActive = getDaysUntil(lw.startDate) <= 0 && getDaysUntil(lw.endDate) >= 0;
 
     return (
@@ -65,78 +65,96 @@ export default function LongWeekendPage() {
         key={`${lw.startDate}-${lw.endDate}`}
         onClick={() => navigate('/kalender')}
         style={{
-          background: '#fff',
-          borderRadius: 16,
-          marginBottom: 12,
+          background: 'var(--surface-container-lowest)',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: 20,
           overflow: 'hidden',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          boxShadow: 'var(--shadow-ambient)',
           opacity: isPast ? 0.6 : 1,
-          border: isActive ? '2px solid #27AE60' : '1px solid transparent',
+          border: 'none',
           cursor: 'pointer',
+          transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          position: 'relative'
         }}
+        className="hover-scale"
       >
-        <div style={{ height: 5, background: color }} />
-        <div style={{ padding: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
-              <span style={{ fontSize: 28, flexShrink: 0 }}>🏖️</span>
+        <div style={{ height: 6, background: isActive ? 'var(--primary)' : color }} />
+        <div style={{ padding: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1, minWidth: 0 }}>
+              <div style={{ 
+                width: 60, height: 60, borderRadius: 'var(--radius-default)', 
+                background: isPast ? 'var(--surface-container-low)' : `${color}10`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 32, flexShrink: 0
+              }}>🏖️</div>
               <div style={{ minWidth: 0 }}>
-                <p style={{ fontSize: 16, fontWeight: 800, color: isPast ? 'var(--text-sub)' : 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <p className="headline" style={{ fontSize: 18, fontWeight: 900, color: 'var(--on-surface)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: -0.2 }}>
                   {lw.label}
                 </p>
-                <p style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>
+                <p style={{ fontSize: 13, color: 'var(--on-surface-variant)', marginTop: 4, fontWeight: 600 }}>
                   📅 {formatLongWeekendRange(lw)}
                 </p>
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-              <div style={{ background: color, borderRadius: 12, padding: '8px 14px', textAlign: 'center' }}>
-                <div style={{ fontSize: 22, fontWeight: 900, color: isPast ? 'var(--text-sub)' : '#fff', lineHeight: 1 }}>
-                  {lw.totalDays}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+              <div style={{ 
+                background: isPast ? 'var(--surface-container-high)' : color, 
+                borderRadius: 'var(--radius-default)', padding: '10px 18px', textAlign: 'center',
+                boxShadow: isPast ? 'none' : `0 8px 20px ${color}15`
+              }}>
+                <div style={{ fontSize: 24, fontWeight: 900, color: isPast ? 'var(--on-surface-variant)' : '#fff', lineHeight: 1 }}>
+                   {lw.totalDays}
                 </div>
-                <div style={{ fontSize: 10, fontWeight: 600, color: isPast ? 'var(--text-sub)' : 'rgba(255,255,255,0.85)' }}>
-                  hari
+                <div style={{ fontSize: 10, fontWeight: 800, color: isPast ? 'var(--on-surface-variant)' : 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                   HARI
                 </div>
               </div>
               <button
                 onClick={e => { e.stopPropagation(); setShareModal({ lw, color }); setCopied(false); }}
                 style={{
-                  width: 36, height: 36, borderRadius: '50%',
-                  background: 'var(--bg)', border: '1px solid var(--border)',
+                  width: 44, height: 44, borderRadius: 'var(--radius-full)',
+                  background: 'var(--surface-container-low)', border: 'none',
                   cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 16,
+                  fontSize: 20, color: 'var(--on-surface)', opacity: 0.8
                 }}
               >↗</button>
             </div>
           </div>
 
           {!isPast && (
-            <div style={{ marginBottom: 10 }}>
+            <div style={{ marginBottom: 16 }}>
               <span style={{
-                background: isActive ? '#D5F5E3' : `${color}15`,
-                color: isActive ? '#27AE60' : color,
-                borderRadius: 20,
-                padding: '6px 12px',
-                fontSize: 13,
-                fontWeight: 700,
-                display: 'inline-block',
+                background: isActive ? 'var(--secondary-container)' : `${color}08`,
+                color: isActive ? 'var(--on-secondary-container)' : color,
+                borderRadius: 100,
+                padding: '6px 14px',
+                fontSize: 12,
+                fontWeight: 900,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6
               }}>
-                {isActive ? '🎉 Sedang berlangsung!' : `⏳ ${countdownLabel(daysUntil)}`}
+                {isActive ? '🎉 SEDANG BERLANGSUNG' : `⏳ ${countdownLabel(daysUntil).toUpperCase()}`}
               </span>
             </div>
           )}
 
-          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ 
+            marginTop: 20, paddingTop: 20, borderTop: 'none', 
+            background: 'var(--surface-container-low)', borderRadius: 'var(--radius-default)', padding: 16,
+            display: 'flex', flexDirection: 'column', gap: 10 
+          }}>
             {lw.holidays
               .filter((h, idx, arr) => arr.findIndex(x => x.id === h.id) === idx)
               .map(h => (
-                <div key={h.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 16 }}>{h.emoji}</span>
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: isPast ? 'var(--text-sub)' : 'var(--text)' }}>
+                <div key={h.id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontSize: 20 }}>{h.emoji}</span>
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 800, color: isPast ? 'var(--on-surface-variant)' : 'var(--on-surface)' }}>
                     {h.shortName}
                   </span>
-                  <span style={{ fontSize: 12, color: 'var(--text-sub)', fontWeight: 600 }}>
-                    {new Date(h.date + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                  <span style={{ fontSize: 12, color: 'var(--on-surface-variant)', fontWeight: 900, opacity: 0.6 }}>
+                    {new Date(h.date + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }).toUpperCase()}
                   </span>
                 </div>
               ))}
@@ -147,116 +165,107 @@ export default function LongWeekendPage() {
   }
 
   return (
-    <div className="page">
-      <div style={{ background: 'var(--red)', padding: '16px 16px 20px', paddingTop: 'max(16px, env(safe-area-inset-top))' }}>
-        <h1 style={{ color: '#fff', fontSize: 20, fontWeight: 800 }}>🏖️ Long Weekend 2026</h1>
-        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 2 }}>
-          {upcoming.length} tersisa · Total {LONG_WEEKENDS_2026.length} di 2026
-        </p>
+    <div className="page page-container" style={{ paddingBottom: 100, background: 'var(--surface)' }}>
+      <header style={{ padding: 'var(--spacing-16) 0 var(--spacing-6)' }}>
+         <h1 className="headline" style={{ fontSize: 44, fontWeight: 900, lineHeight: 1.1, letterSpacing: -2 }}>
+            Long Weekend
+         </h1>
+         <p style={{ fontSize: 17, color: 'var(--on-surface-variant)', marginTop: 12, opacity: 0.8, fontWeight: 600 }}>
+            {upcoming.length} Long Weekend tersisa · Total {LONG_WEEKENDS_2026.length} di 2026
+         </p>
+      </header>
+
+      {/* Summary Chips - No-Line logic */}
+      <div style={{ 
+        background: 'var(--surface-container-low)', borderRadius: 'var(--radius-xl)', 
+        padding: '32px 24px', display: 'flex', justifyContent: 'space-around', 
+        marginBottom: 48, position: 'relative'
+      }}>
+        {[
+          { num: LONG_WEEKENDS_2026.length, label: 'TOTAL LW' },
+          { num: upcoming.length, label: 'TERSISA' },
+          { num: Math.max(...LONG_WEEKENDS_2026.map(lw => lw.totalDays)), label: 'MAX HARI' },
+        ].map((item, i) => (
+          <div key={item.label} style={{ textAlign: 'center', flex: 1 }}>
+              <div style={{ fontSize: 40, fontWeight: 900, color: 'var(--primary)', letterSpacing: -2 }}>{item.num}</div>
+              <div style={{ fontSize: 10, color: 'var(--on-surface-variant)', fontWeight: 900, marginTop: 4, letterSpacing: 1.5 }}>{item.label}</div>
+          </div>
+        ))}
       </div>
 
-      <div style={{ padding: '16px' }}>
-        {/* Summary */}
-        <div style={{ background: '#fff', borderRadius: 14, padding: 16, display: 'flex', justifyContent: 'space-around', marginBottom: 20, boxShadow: 'var(--shadow)' }}>
-          {[
-            { num: LONG_WEEKENDS_2026.length, label: 'Total LW' },
-            { num: upcoming.length, label: 'Tersisa' },
-            { num: Math.max(...LONG_WEEKENDS_2026.map(lw => lw.totalDays)), label: 'Max Hari' },
-          ].map((item, i, arr) => (
-            <div key={item.label} style={{ textAlign: 'center', display: 'flex', alignItems: 'center', gap: i < arr.length - 1 ? 0 : 0 }}>
-              <div>
-                <div style={{ fontSize: 28, fontWeight: 900, color: 'var(--red)' }}>{item.num}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-sub)', fontWeight: 600, marginTop: 2 }}>{item.label}</div>
-              </div>
-              {i < arr.length - 1 && <div style={{ width: 1, height: 36, background: 'var(--border)', marginLeft: 24 }} />}
-            </div>
-          ))}
-        </div>
-
+      <div>
         {upcoming.length > 0 && (
           <>
-            <p style={{ fontSize: 16, fontWeight: 800, marginBottom: 10 }}>Mendatang</p>
+            <h2 className="headline" style={{ fontSize: 22, fontWeight: 900, marginBottom: 20, letterSpacing: -0.5 }}>Mendatang</h2>
             {upcoming.map((lw, i) => renderCard(lw, i, false))}
           </>
         )}
 
         {past.length > 0 && (
-          <>
-            <p style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-sub)', marginBottom: 10, marginTop: 16 }}>Sudah Berlalu</p>
+          <div style={{ marginTop: 56 }}>
+            <h2 className="headline" style={{ fontSize: 22, fontWeight: 900, color: 'var(--on-surface-variant)', marginBottom: 20, letterSpacing: -0.5 }}>Sudah Berlalu</h2>
             {past.map((lw, i) => renderCard(lw, i, true))}
-          </>
+          </div>
         )}
       </div>
 
-      {/* Share Modal */}
+      {/* Share Modal - Stitch Compliant */}
       {shareModal && (
         <div
           onClick={() => setShareModal(null)}
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-            zIndex: 200,
-          }}
+          className="share-backdrop"
+          style={{ zIndex: 1000 }}
         >
           <div
             onClick={e => e.stopPropagation()}
-            style={{
-              background: '#fff',
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
-              padding: '12px 24px 32px',
-              width: '100%',
-              maxWidth: 'var(--max-w)',
-            }}
+            className="share-sheet"
+            style={{ padding: '16px 32px 48px' }}
           >
-            <div style={{ width: 40, height: 4, background: 'var(--border)', borderRadius: 2, margin: '0 auto 16px' }} />
-            <h3 style={{ fontSize: 18, fontWeight: 800, textAlign: 'center', marginBottom: 6 }}>Bagikan Long Weekend</h3>
-            <p style={{ fontSize: 13, color: 'var(--text-sub)', textAlign: 'center', marginBottom: 20 }}>
-              🏖️ {shareModal.lw.label} · {formatLongWeekendRange(shareModal.lw)} · {shareModal.lw.totalDays} hari
+            <div style={{ width: 44, height: 5, background: 'var(--surface-container-highest)', borderRadius: 100, margin: '0 auto 24px', opacity: 0.5 }} />
+            <h3 className="headline" style={{ fontSize: 22, fontWeight: 900, textAlign: 'center', marginBottom: 10 }}>Bagikan Momen</h3>
+            <p style={{ fontSize: 14, color: 'var(--on-surface-variant)', textAlign: 'center', marginBottom: 32, fontWeight: 600 }}>
+              🏖️ {shareModal.lw.label} · {formatLongWeekendRange(shareModal.lw)}
             </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <button
                 onClick={() => handleShare('whatsapp')}
-                style={{ background: '#25D366', color: '#fff', border: 'none', borderRadius: 14, padding: '14px 20px', fontSize: 15, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}
+                className="btn btn-primary btn-full shadow-lg"
+                style={{ padding: 20, fontSize: 16, fontWeight: 900, letterSpacing: 0.5 }}
               >
-                <span style={{ fontSize: 22 }}>💬</span> Bagikan ke WhatsApp
+                BAGIKAN KE WHATSAPP 💬
               </button>
 
-              <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ display: 'flex', gap: 12 }}>
                 {[
-                  { id: 'x', label: 'X / Twitter', emoji: '𝕏', bg: '#000' },
-                  { id: 'threads', label: 'Threads', emoji: '@', bg: '#000' },
-                  { id: 'copy', label: copied ? 'Tersalin!' : 'Salin Teks', emoji: copied ? '✅' : '📋', bg: 'var(--bg)' },
+                  { id: 'x', label: '𝕏 Twitter', bg: '#1c1c19' },
+                  { id: 'threads', label: 'Threads', bg: '#333' },
+                  { id: 'copy', label: copied ? 'TERSALIN' : 'COPY TEXT', bg: 'var(--surface-container-high)' },
                 ].map(p => (
                   <button
                     key={p.id}
                     onClick={() => handleShare(p.id)}
                     style={{
-                      flex: 1, background: p.bg, color: p.bg === 'var(--bg)' ? 'var(--text)' : '#fff',
-                      border: p.bg === 'var(--bg)' ? '1.5px solid var(--border)' : 'none',
-                      borderRadius: 12, padding: '12px 8px', fontSize: 12, fontWeight: 700,
-                      cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                      flex: 1, background: p.bg, color: p.bg.startsWith('var') ? 'var(--on-surface)' : '#fff',
+                      border: 'none', borderRadius: 'var(--radius-md)', padding: '18px 8px', fontSize: 11, fontWeight: 900,
+                      cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
                     }}
+                    className="hover-scale"
                   >
-                    <span style={{ fontSize: 20 }}>{p.emoji}</span>
                     {p.label}
                   </button>
                 ))}
               </div>
-
-              {'share' in navigator && (
-                <button
-                  onClick={() => handleShare('native')}
-                  style={{ background: 'var(--bg)', color: 'var(--text)', border: '1.5px solid var(--border)', borderRadius: 14, padding: '14px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
-                >
-                  📤 Bagikan Via...
-                </button>
-              )}
             </div>
           </div>
         </div>
       )}
+      
+      <style>{`
+        .hover-scale { transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .hover-scale:hover { transform: translateY(-6px); }
+        .hover-scale:active { transform: scale(0.98); }
+      `}</style>
     </div>
   );
 }

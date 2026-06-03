@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useUser } from './context/UserContext';
+import { checkAndFireReminders } from './services/ReminderService';
 import DesktopHeader from './components/DesktopHeader';
 import DesktopSidebar from './components/DesktopSidebar';
 import BottomNav from './components/BottomNav';
@@ -18,6 +20,10 @@ import OnboardingPage from './pages/OnboardingPage';
 function AppContent() {
   const { authState } = useUser();
   const location = useLocation();
+
+  useEffect(() => {
+    checkAndFireReminders();
+  }, []);
 
   if (authState === 'loading') {
     return (
