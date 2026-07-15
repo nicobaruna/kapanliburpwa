@@ -1,17 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { formatLongWeekendRange, getDaysUntil, formatShortDate } from '../utils/dateUtils';
+import { formatLongWeekendRange, getDaysUntil, formatShortDate, getUpcomingHolidays, getNextLongWeekend, getMonthName, toDateStr } from '../utils/dateUtils';
 import { getRecommendations, RecommendationResult, TripStyle, formatCurrency } from '../services/api';
 import type { Holiday, LongWeekend } from '../data/holidays2026';
-import { getRecommendations, formatCurrency } from '../services/api';
-import type { RecommendationResult } from '../services/api';
+import { HOLIDAYS_2026 } from '../data/holidays2026';
 
 export default function CalendarPage() {
   const navigate = useNavigate();
   const [upcoming, setUpcoming] = useState<Holiday[]>([]);
   const [nearestLW, setNearestLW] = useState<LongWeekend | null>(null);
   const [topRec, setTopRec] = useState<RecommendationResult | null>(null);
+  const [calYear, setCalYear] = useState<number>(new Date().getFullYear());
+  const [calMonth, setCalMonth] = useState<number>(new Date().getMonth());
+  const [highlighted, setHighlighted] = useState<string[]>([]);
+  const [cutiHighlight, setCutiHighlight] = useState<string[]>([]);
 
   useEffect(() => {
     setUpcoming(getUpcomingHolidays(3));
@@ -22,27 +25,26 @@ export default function CalendarPage() {
       if (results.length > 0) setTopRec(results[0]);
     }).catch(() => { });
   }, []);
-  // We use static mock data matching the "Maret 2026" screenshot for 100% fidelity
 
-  // Generating a simple 5-week grid for the month of March 2026.
-  // March 1, 2026 is a Sunday. 31 days.
-  const daysInMonth = 31;
-  const firstDayIndex = 0; // 0 = Sunday
-
-  const cells = [];
+  
+const cells = useMemo(() => {
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const firstDayIndex = new Date(calYear, calMonth, 1).getDay(); // 0 = Sunday
+  const arr = [];
   // previous month filler
   for (let i = 0; i < firstDayIndex; i++) {
-    cells.push({ day: '', type: 'empty' });
+    arr.push({ day: '', type: 'empty' });
   }
   // current month
   for (let i = 1; i <= daysInMonth; i++) {
-    cells.push({
+    arr.push({
       day: i,
       dateStr: `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`,
     });
   }
-  while (cells.length % 7 !== 0) cells.push({ day: '', dateStr: '' });
-
+  while (arr.length % 7 !== 0) arr.push({ day: '', dateStr: '' });
+  return arr;
+}, [calYear, calMonth]);
   const holidayMap = new Map<string, Holiday>();
   HOLIDAYS_2026.forEach(h => holidayMap.set(h.date, h));
 
@@ -51,7 +53,16 @@ export default function CalendarPage() {
     return d.getFullYear() === calYear && d.getMonth() === calMonth;
   }).sort((a, b) => a.date.localeCompare(b.date));
 
-  const cutiRecs = computeCutiRecs(calYear, calMonth);
+  const cutiRecs = useMemo(() => computeCutiRecs(calYear, calMonth), [calYear, calMonth]);
+  
+  useEffect(() => {
+    const allSuggested = cutiRecs.flatMap(r => r.cutiDates);
+    const filtered = allSuggested.filter(d => {
+      const date = new Date(d + 'T00:00:00');
+      return date.getFullYear() === calYear && date.getMonth() === calMonth;
+    });
+    setCutiHighlight(filtered);
+  }, [calYear, calMonth, cutiRecs]);
 
   function prevMonth() {
     const d = new Date(calYear, calMonth - 1, 1);
@@ -115,8 +126,14 @@ export default function CalendarPage() {
         {/* Title Area */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32, marginTop: 24 }}>
           <div>
-            <h1 className="headline" style={{ fontSize: 48, fontWeight: 900, color: 'var(--on-surface)', letterSpacing: '-0.02em', lineHeight: 1.1 }}>Maret<span style={{ color: 'var(--on-surface-variant)' }}>2026</span></h1>
+            <h1 className="headline" style={{ fontSize: 48, fontWeight: 900, color: 'var(--on-surface)', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+              {getMonthName(calMonth)} <span style={{ color: 'var(--on-surface-variant)' }}>{calYear}</span>
+            </h1>
             <p style={{ fontSize: 16, color: 'var(--on-surface-variant)', marginTop: 8 }}>Strategic planning for your next Indonesian escape.</p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button onClick={prevMonth} style={{ background: '#fff', border: '1px solid var(--outline-variant)', borderRadius: 'var(--radius-full)', padding: '6px 12px', fontSize: 13, fontWeight: 800, color: 'var(--primary-container)', cursor: 'pointer' }}>&lt; Prev</button>
+            <button onClick={nextMonth} style={{ background: '#fff', border: '1px solid var(--outline-variant)', borderRadius: 'var(--radius-full)', padding: '6px 12px', fontSize: 13, fontWeight: 800, color: 'var(--primary-container)', cursor: 'pointer' }}>Next &gt;</button>
           </div>
           <div style={{ display: 'flex', background: 'var(--surface-container-low)', borderRadius: 'var(--radius-full)', padding: 4, border: '1px solid var(--outline-variant)' }}>
             <button style={{ background: '#fff', border: '1px solid var(--outline-variant)', borderRadius: 'var(--radius-full)', padding: '8px 24px', fontSize: 13, fontWeight: 800, color: 'var(--primary-container)', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', cursor: 'pointer' }}>Monthly</button>
@@ -141,56 +158,90 @@ export default function CalendarPage() {
             {/* Grid Constraints */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderTop: '1px solid var(--outline-variant)', borderLeft: '1px solid var(--outline-variant)', borderRadius: 16, overflow: 'hidden', marginBottom: 32 }}>
               {cells.map((cell, idx) => {
-                const isSunday = idx % 7 === 0;
-                const isWeekend = idx % 7 === 0 || idx % 7 === 6;
-                const isEmpty = cell.type === 'empty';
-
-                // Custom Cell Highlights from mockup
-                const isCell1 = cell.day === 1;
-                const isCell13 = cell.day === 13; // Friday Getaway 
-                const isCell20 = cell.day === 20; // Nyepi
-                const isCell30 = cell.day === 30; // Idul Fitri
-                const isCell31 = cell.day === 31; // Idul Fitri
-
-                const isHighlighted = isCell13 || isCell20 || isCell30 || isCell31;
-
-                return (
-                  <div key={idx} style={{
-                    height: 90,
-                    borderRight: '1px solid var(--outline-variant)',
-                    borderBottom: '1px solid var(--outline-variant)',
-                    padding: 12,
-                    background: isEmpty ? 'var(--surface-container-low)' : (isHighlighted ? 'rgba(255,255,255,0.5)' : '#fff'),
-                    position: 'relative',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center'
-                  }}>
-                    {/* Day Number */}
-                    {!isEmpty && (
-                      <span style={{
-                        fontSize: 14, fontWeight: 800,
-                        color: isSunday ? 'var(--primary-container)' : 'var(--on-surface)',
-                        alignSelf: 'flex-start'
-                      }}>{cell.day}</span>
-                    )}
-
-                    {/* Mockup specific pills */}
-                    {isCell1 && (
-                      <div style={{ marginTop: 'auto', background: 'var(--secondary-container)', color: 'var(--primary-container)', fontSize: 8, fontWeight: 800, padding: '4px 20px', borderRadius: 12, border: '1px solid rgba(158,0,31,0.1)', letterSpacing: 0.5 }}>
-                        MINGGU
-                      </div>
-                    )}
-                    {isCell13 && (
-                      <div style={{ marginTop: 'auto', width: '100%', height: 4, background: '#97E4A8', borderRadius: 2 }} />
-                    )}
-                    {isCell20 && (
-                      <div style={{ marginTop: 'auto', width: '100%', height: 4, background: 'var(--primary)', borderRadius: 2 }} />
-                    )}
-                    {(isCell30 || isCell31) && (
-                      <div style={{ marginTop: 'auto', width: '100%', height: 4, background: 'var(--primary)', borderRadius: 2 }} />
-                    )}
-                  </div>
-                );
-              })}
+        const isSunday = idx % 7 === 0;
+        const isWeekend = idx % 7 === 0 || idx % 7 === 6;
+        const isEmpty = cell.type === 'empty';
+        // Custom Cell Highlights from mockup
+        const isCell1 = cell.day === 1;
+        const isCell13 = cell.day === 13; // Friday Getaway 
+        const isCell20 = cell.day === 20; // Nyepi
+        const isCell30 = cell.day === 30; // Idul Fitri
+        const isCell31 = cell.day === 31; // Idul Fitri
+        const isHighlighted = isCell13 || isCell20 || isCell30 || isCell31;
+        // Holiday and cuti detection
+        const holiday = holidaysThisMonth.find(h => h.date === cell.dateStr);
+        const isCutiHighlighted = cutiHighlight.includes(cell.dateStr);
+        const background = isEmpty
+          ? 'var(--surface-container-low)'
+          : isHighlighted
+            ? 'rgba(255,255,255,0.5)'
+            : isCutiHighlighted
+              ? 'rgba(0,128,255,0.3)'
+              : holiday
+                ? 'rgba(255,230,0,0.3)'
+                : '#fff';
+        return (
+          <div key={idx} style={{
+            height: 90,
+            borderRight: '1px solid var(--outline-variant)',
+            borderBottom: '1px solid var(--outline-variant)',
+            padding: 12,
+            background: background,
+            position: 'relative',
+            display: 'flex', flexDirection: 'column', alignItems: 'center'
+          }}>
+            {/* Day Number */}
+            {!isEmpty && (
+              <span style={{
+                fontSize: 14, fontWeight: 800,
+                color: isSunday ? 'var(--primary-container)' : 'var(--on-surface)',
+                alignSelf: 'flex-start'
+              }}>{cell.day}</span>
+            )}
+            {/* Holiday badge */}
+            {holiday && (
+              <div style={{
+                marginTop: 'auto',
+                background: 'var(--primary)',
+                color: '#fff',
+                fontSize: 9,
+                fontWeight: 800,
+                padding: '2px 6px',
+                borderRadius: 6,
+                letterSpacing: 0.5
+              }}>{holiday.name}</div>
+            )}
+            {/* Mockup specific pills */}
+            {isCell1 && (
+              <div style={{ marginTop: 'auto', background: 'var(--secondary-container)', color: 'var(--primary-container)', fontSize: 8, fontWeight: 800, padding: '4px 20px', borderRadius: 12, border: '1px solid rgba(158,0,31,0.1)', letterSpacing: 0.5 }}>
+                MINGGU
+              </div>
+            )}
+            {isCell13 && (
+              <div style={{ marginTop: 'auto', width: '100%', height: 4, background: '#97E4A8', borderRadius: 2 }} />
+            )}
+            {isCell20 && (
+              <div style={{ marginTop: 'auto', width: '100%', height: 4, background: 'var(--primary)', borderRadius: 2 }} />
+            )}
+            {(isCell30 || isCell31) && (
+              <div style={{ marginTop: 'auto', width: '100%', height: 4, background: 'var(--primary)', borderRadius: 2 }} />
+            )}
+          </div>
+        );
+      })}
+      {/* CutI recommendations list */}
+      <div style={{ marginTop: 24 }}>
+        {cutiRecs.map((rec, i) => (
+          <div key={i} style={{ background: '#fff', borderRadius: 12, padding: 12, marginBottom: 8, border: '1px solid var(--outline-variant)' }}>
+            <strong>{formatShortDate(rec.startDate)} – {formatShortDate(rec.endDate)}</strong>
+            <div style={{ marginTop: 4, fontSize: 12, color: 'var(--on-surface-variant)' }}>
+              {rec.cutiDates.map(d => (
+                <span key={d} style={{ marginRight: 4 }}>{toDateStr(new Date(d + 'T00:00:00'))}</span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
             </div>
 
             {/* Bottom Cards inside Gray Container */}
@@ -293,9 +344,8 @@ export default function CalendarPage() {
               <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--on-surface)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
                 <span className="material-symbols-outlined" style={{ color: 'var(--primary-container)', fontSize: 20 }}>table_rows</span> Detailed Dates
               </h3>
-
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {upcoming.map(h => {
+                {holidaysThisMonth.map(h => {
                   const dateObj = new Date(h.date);
                   const dayStr = dateObj.getDate();
                   const monthStr = dateObj.toLocaleString('en-US', { month: 'short' }).toUpperCase();
@@ -313,7 +363,7 @@ export default function CalendarPage() {
                       </div>
                       <h4 style={{ fontSize: 16, fontWeight: 800, marginBottom: 6 }}>{h.name} {h.emoji}</h4>
                       <p style={{ fontSize: 12, color: 'var(--on-surface-variant)', lineHeight: 1.5 }}>
-                        Sistem mendeteksi ini sebagai {isPaidLeave ? 'Cuti Bersama' : 'Libur Nasional'}.
+                        {h.type.includes('cuti_bersama') ? 'Cuti Bersama' : 'Libur Nasional'}
                       </p>
                     </div>
                   );
@@ -391,4 +441,55 @@ export default function CalendarPage() {
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </>
   );
+}
+
+
+
+// Type for cuti recommendation
+interface CutiRec {
+  startDate: string;
+  endDate: string;
+  cutiDates: string[]; // list of date strings for the cuti period
+}
+
+// Compute cuti recommendations for the given month/year based on cuti_bersama holidays
+function computeCutiRecs(year: number, month: number): CutiRec[] {
+  // Filter holidays that are 'cuti_bersama' within the month
+  const cutiHolidays = HOLIDAYS_2026.filter(h =>
+    h.type.includes('cuti_bersama') &&
+    new Date(h.date + 'T00:00:00').getFullYear() === year &&
+    new Date(h.date + 'T00:00:00').getMonth() === month
+  );
+
+  // Group consecutive dates into a single record
+  const sorted = cutiHolidays.map(h => h.date).sort();
+  const recs: CutiRec[] = [];
+  let current: string[] = [];
+  for (let i = 0; i < sorted.length; i++) {
+    if (i === 0) {
+      current.push(sorted[i]);
+    } else {
+      const prev = new Date(sorted[i - 1] + 'T00:00:00');
+      const cur = new Date(sorted[i] + 'T00:00:00');
+      const diff = (cur.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+      if (diff === 1) {
+        current.push(sorted[i]);
+      } else {
+        recs.push({
+          startDate: current[0],
+          endDate: current[current.length - 1],
+          cutiDates: [...current],
+        });
+        current = [sorted[i]];
+      }
+    }
+  }
+  if (current.length) {
+    recs.push({
+      startDate: current[0],
+      endDate: current[current.length - 1],
+      cutiDates: [...current],
+    });
+  }
+  return recs;
 }

@@ -2,10 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { planTrip, ORIGINS } from '../services/TripPlannerService';
 import type { TripInput, TripPlanResult, TripStyle } from '../services/TripPlannerService';
-import { getRecommendations, formatCurrency } from '../services/api';
+import { getRecommendations, formatCurrency } from '../services/api';  // ← restored
 import type { RecommendationResult } from '../services/api';
 import ShareSheet from '../components/ShareSheet';
-
 // --- Local helpers -----------------------------------------------------------
 
 function formatRp(n: number): string {
@@ -96,7 +95,7 @@ export default function FinancialPlannerPage() {
 
   const originLabel = ORIGINS.find(o => o.id === origin)?.label ?? origin;
 
-  // ── FORM SHIFTED TO EDITORIAL STYLE ─────────────────────────────────────────
+  // ── FORM ─────────────────────────────────────────────────────────────────────
   if (phase === 'form') {
     return (
       <div className="page page-container" style={{ paddingBottom: '120px', background: 'var(--surface)' }}>
@@ -209,6 +208,7 @@ export default function FinancialPlannerPage() {
           </p>
         </header>
 
+        {/* ── LOADING STEPS ──────────────────────────────────────────────────── */}
         {phase === 'loading' && (
           <div style={{ maxWidth: 640, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
             {[
@@ -224,7 +224,7 @@ export default function FinancialPlannerPage() {
                   background: 'var(--surface-container-low)', borderRadius: 'var(--radius-xl)',
                   opacity: done || active ? 1 : 0.3, transition: 'all 0.4s ease',
                   position: 'relative', overflow: 'hidden'
-                }} className={active ? "hover-scale" : ""}>
+                }} className={active ? 'hover-scale' : ''}>
                   {active && <div style={{ position: 'absolute', inset: 0, opacity: 0.05, background: 'var(--primary)', animation: 'pulse 1.5s infinite' }} />}
                   <div style={{ width: 64, height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-container-highest)', borderRadius: 'var(--radius-full)' }}>
                     {done ? <span style={{ fontSize: 36 }}>✅</span> : active ? <Spinner /> : <div style={{ width: 24, height: 24, borderRadius: 12, background: 'var(--outline-variant)', opacity: 0.3 }} />}
@@ -239,9 +239,11 @@ export default function FinancialPlannerPage() {
           </div>
         )}
 
+        {/* ── RESULT ─────────────────────────────────────────────────────────── */}
         {phase === 'result' && result && (
           <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-            {/* Filter pills - No Line logic */}
+
+            {/* Filter pills */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 56, justifyContent: 'center' }}>
               {[
                 `Budget ${formatRp(parseRp(budgetStr))}`,
@@ -256,25 +258,26 @@ export default function FinancialPlannerPage() {
               ))}
             </div>
 
+            {/* Not enough budget warning */}
             {result.notEnoughBudget && (
               <div style={{
-                background: 'var(--surface-container-low)', padding: 56, borderRadius: 'var(--radius-xl)', textTransform: 'center', marginBottom: 64, border: 'none',
+                background: 'var(--surface-container-low)', padding: 56, borderRadius: 'var(--radius-xl)',
+                textAlign: 'center', marginBottom: 64,
                 boxShadow: 'inset 0 0 100px rgba(158,0,31,0.02)'
               }}>
-                <div style={{ textAlign: 'center' }}>
-                  <p style={{ fontSize: 72, marginBottom: 24 }}>⚠️</p>
-                  <h2 className="headline" style={{ fontSize: 32, fontWeight: 900, marginBottom: 16 }}>Anggaran Terbatas</h2>
-                  <p style={{ fontSize: 17, maxWidth: 480, margin: '0 auto', lineHeight: 1.7, opacity: 0.8, fontWeight: 600 }}>
-                    Wah, anggaranmu sepertinya kurang untuk perjalanan dari {originLabel} selama {days} hari.
-                    Coba turunkan durasi atau sesuaikan kota asal.
-                  </p>
-                </div>
+                <p style={{ fontSize: 72, marginBottom: 24 }}>⚠️</p>
+                <h2 className="headline" style={{ fontSize: 32, fontWeight: 900, marginBottom: 16 }}>Anggaran Terbatas</h2>
+                <p style={{ fontSize: 17, maxWidth: 480, margin: '0 auto', lineHeight: 1.7, opacity: 0.8, fontWeight: 600 }}>
+                  Wah, anggaranmu sepertinya kurang untuk perjalanan dari {originLabel} selama {days} hari.
+                  Coba turunkan durasi atau sesuaikan kota asal.
+                </p>
               </div>
             )}
 
-            {/* ── INSPIRATION RESULTS ALIGNED WITH DASHBOARD ────────────────── */}
+            {/* ── DESTINATION CARDS ──────────────────────────────────────────── */}
             {inspirationResults.length > 0 && (
               <div style={{ marginTop: 24 }}>
+                {/* FIX 1: grid wrapper closes AFTER the map, not inside it */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 40 }}>
                   {inspirationResults.map(d => (
                     <div
@@ -282,8 +285,9 @@ export default function FinancialPlannerPage() {
                       className="hover-scale"
                       onClick={() => setSelectedDest(d)}
                       style={{
-                        background: 'var(--surface-container-low)', borderRadius: 'var(--radius-xl)', padding: 24,
-                        cursor: 'pointer', transition: 'all 0.3s ease', boxShadow: 'var(--shadow-ambient)'
+                        background: 'var(--surface-container-low)', borderRadius: 'var(--radius-xl)',
+                        cursor: 'pointer', transition: 'all 0.3s ease', boxShadow: 'var(--shadow-ambient)',
+                        overflow: 'hidden'
                       }}
                     >
                       <div className="asymmetric-image" style={{ height: 260, position: 'relative', overflow: 'hidden' }}>
@@ -298,199 +302,198 @@ export default function FinancialPlannerPage() {
                         </div>
                       </div>
 
-                      <div style={{ marginTop: 24, padding: '0 8px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-                          <div>
-                            <h3 className="headline" style={{ fontSize: 26, fontWeight: 900, letterSpacing: -0.5 }}>{d.name}</h3>
-                            <p style={{ fontSize: 15, color: 'var(--on-surface-variant)', marginTop: 4, fontWeight: 700 }}>{d.location}</p>
+                      {/* FIX 2: single name/location block, inside the padded content area */}
+                      <div style={{ padding: 20 }}>
+                        <h3 style={{ fontSize: 22, fontWeight: 900, marginBottom: 2 }}>{d.name}</h3>
+                        <p style={{ fontSize: 12, color: 'var(--on-surface-variant)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: 13 }}>location_on</span> {d.location}
+                        </p>
+
+                        {d.isRoadTrip && d.roadTripDetails ? (
+                          <div style={{ marginBottom: 12 }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+                              <div style={{ background: 'var(--surface-container-low)', padding: '10px 12px', borderRadius: 'var(--radius-md)' }}>
+                                <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--primary-container)', textTransform: 'uppercase', marginBottom: 2 }}>⛽ Bensin PP</p>
+                                <p style={{ fontSize: 13, fontWeight: 800 }}>{formatCurrency(d.roadTripDetails.fuelCostTotal)}</p>
+                                <p style={{ fontSize: 10, color: 'var(--on-surface-variant)', marginTop: 1 }}>{d.roadTripDetails.litersNeeded.toFixed(1)} L · Rp10k/L</p>
+                              </div>
+                              <div style={{ background: 'var(--surface-container-low)', padding: '10px 12px', borderRadius: 'var(--radius-md)' }}>
+                                <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--primary-container)', textTransform: 'uppercase', marginBottom: 2 }}>🛣️ Tol PP</p>
+                                <p style={{ fontSize: 13, fontWeight: 800 }}>{d.roadTripDetails.tollCostTotal > 0 ? formatCurrency(d.roadTripDetails.tollCostTotal) : 'Gratis'}</p>
+                                <p style={{ fontSize: 10, color: 'var(--on-surface-variant)', marginTop: 1 }}>{d.roadTripDetails.distanceKm} km · PP</p>
+                              </div>
+                            </div>
+                            <div style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 'var(--radius-md)', padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: '#166534' }}>🚗 Total Biaya Roadtrip</span>
+                              <span style={{ fontSize: 13, fontWeight: 900, color: '#166534' }}>{formatCurrency(d.roadTripDetails.totalRoadTripCost)}</span>
+                            </div>
+                            <div style={{ background: 'var(--surface-container-low)', padding: '10px 12px', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between' }}>
+                              <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--primary-container)', textTransform: 'uppercase' }}>🛏️ Hotel × {days} malam</p>
+                              <p style={{ fontSize: 13, fontWeight: 800 }}>{formatCurrency(d.totalHotelCost)}</p>
+                            </div>
                           </div>
+                        ) : (
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                            <div style={{ background: 'var(--surface-container-low)', padding: '10px 12px', borderRadius: 'var(--radius-md)' }}>
+                              <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--primary-container)', textTransform: 'uppercase', marginBottom: 2 }}>✈️ Tiket PP × {people}</p>
+                              <p style={{ fontSize: 13, fontWeight: 800 }}>{formatCurrency(d.totalFlightCost)}</p>
+                            </div>
+                            <div style={{ background: 'var(--surface-container-low)', padding: '10px 12px', borderRadius: 'var(--radius-md)' }}>
+                              <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--primary-container)', textTransform: 'uppercase', marginBottom: 2 }}>🛏️ Hotel × {days} malam</p>
+                              <p style={{ fontSize: 13, fontWeight: 800 }}>{formatCurrency(d.totalHotelCost)}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        <div style={{
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%)',
+                          color: '#fff', padding: '20px 24px', borderRadius: 'var(--radius-md)', marginBottom: 24,
+                          boxShadow: '0 12px 30px rgba(158,0,31,0.15)'
+                        }}>
+                          <div>
+                            <p style={{ fontSize: 10, fontWeight: 900, opacity: 0.8, letterSpacing: 1.5 }}>TOTAL ESTIMASI</p>
+                            <p style={{ fontSize: 22, fontWeight: 900, marginTop: 4 }}>{formatCurrency(d.estTotalCost)}</p>
+                          </div>
+                          <span style={{ fontSize: 32 }}>📊</span>
                         </div>
 
-                        <div style={{ padding: 20 }}>
-                          <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 2 }}>{d.name}</h3>
-                          <p style={{ fontSize: 12, color: 'var(--on-surface-variant)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: 13 }}>location_on</span> {d.location}
-                          </p>
-
-                          {d.isRoadTrip && d.roadTripDetails ? (
-                            <div style={{ marginBottom: 12 }}>
-                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-                                <div style={{ background: 'var(--surface-container-low)', padding: '10px 12px', borderRadius: 'var(--radius-md)' }}>
-                                  <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--primary-container)', textTransform: 'uppercase', marginBottom: 2 }}>⛽ Bensin PP</p>
-                                  <p style={{ fontSize: 13, fontWeight: 800 }}>{formatCurrency(d.roadTripDetails.fuelCostTotal)}</p>
-                                  <p style={{ fontSize: 10, color: 'var(--on-surface-variant)', marginTop: 1 }}>{d.roadTripDetails.litersNeeded.toFixed(1)} L · Rp10k/L</p>
-                                </div>
-                                <div style={{ background: 'var(--surface-container-low)', padding: '10px 12px', borderRadius: 'var(--radius-md)' }}>
-                                  <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--primary-container)', textTransform: 'uppercase', marginBottom: 2 }}>🛣️ Tol PP</p>
-                                  <p style={{ fontSize: 13, fontWeight: 800 }}>{d.roadTripDetails.tollCostTotal > 0 ? formatCurrency(d.roadTripDetails.tollCostTotal) : 'Gratis'}</p>
-                                  <p style={{ fontSize: 10, color: 'var(--on-surface-variant)', marginTop: 1 }}>{d.roadTripDetails.distanceKm} km · PP</p>
-                                </div>
-                              </div>
-                              <div style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 'var(--radius-md)', padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                                <span style={{ fontSize: 11, fontWeight: 700, color: '#166534' }}>🚗 Total Biaya Roadtrip</span>
-                                <span style={{ fontSize: 13, fontWeight: 900, color: '#166534' }}>{formatCurrency(d.roadTripDetails.totalRoadTripCost)}</span>
-                              </div>
-                              <div style={{ background: 'var(--surface-container-low)', padding: '10px 12px', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between' }}>
-                                <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--primary-container)', textTransform: 'uppercase' }}>🛏️ Hotel × {days} malam</p>
-                                <p style={{ fontSize: 13, fontWeight: 800 }}>{formatCurrency(d.totalHotelCost)}</p>
-                              </div>
-                            </div>
-                          ) : (
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
-                              <div style={{ background: 'var(--surface-container-low)', padding: '10px 12px', borderRadius: 'var(--radius-md)' }}>
-                                <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--primary-container)', textTransform: 'uppercase', marginBottom: 2 }}>✈️ Tiket PP × {people}</p>
-                                <p style={{ fontSize: 13, fontWeight: 800 }}>{formatCurrency(d.totalFlightCost)}</p>
-                              </div>
-                              <div style={{ background: 'var(--surface-container-low)', padding: '10px 12px', borderRadius: 'var(--radius-md)' }}>
-                                <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--primary-container)', textTransform: 'uppercase', marginBottom: 2 }}>🛏️ Hotel × {days} malam</p>
-                                <p style={{ fontSize: 13, fontWeight: 800 }}>{formatCurrency(d.totalHotelCost)}</p>
-                              </div>
-                            </div>
-                          )}
-
-                          <div style={{
-                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                            background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%)',
-                            color: '#fff', padding: '20px 24px', borderRadius: 'var(--radius-md)', marginBottom: 24,
-                            boxShadow: '0 12px 30px rgba(158,0,31,0.15)'
-                          }}>
-                            <div>
-                              <p style={{ fontSize: 10, fontWeight: 900, opacity: 0.8, letterSpacing: 1.5 }}>TOTAL ESTIMASI</p>
-                              <p style={{ fontSize: 22, fontWeight: 900, marginTop: 4 }}>{formatCurrency(d.estTotalCost)}</p>
-                            </div>
-                            <span style={{ fontSize: 32 }}>📊</span>
-                          </div>
-
-                          <div style={{ display: 'flex', gap: 12 }}>
-                            <button className="btn btn-primary" style={{ flex: 1, padding: 18, fontSize: 14, fontWeight: 900 }} onClick={e => { e.stopPropagation(); setSelectedDest(d); }}>
-                              AI ITINERARY
-                            </button>
-                            <button
-                              className="btn btn-secondary"
-                              style={{ width: 60, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-container-highest)' }}
-                              onClick={e => { e.stopPropagation(); setShareDest(d); }}
-                            >
-                              <span style={{ fontSize: 22 }}>↗</span>
-                            </button>
-                          </div>
+                        <div style={{ display: 'flex', gap: 12 }}>
+                          <button
+                            className="btn btn-primary"
+                            style={{ flex: 1, padding: 18, fontSize: 14, fontWeight: 900 }}
+                            onClick={e => { e.stopPropagation(); setSelectedDest(d); }}
+                          >
+                            AI ITINERARY
+                          </button>
+                          <button
+                            className="btn btn-secondary"
+                            style={{ width: 60, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-container-highest)' }}
+                            onClick={e => { e.stopPropagation(); setShareDest(d); }}
+                          >
+                            <span style={{ fontSize: 22 }}>↗</span>
+                          </button>
                         </div>
                       </div>
-                  ))}
                     </div>
-              </div>
-            )}
-
-                <div style={{ marginTop: 80, textAlign: 'center' }}>
-                  <button
-                    className="btn btn-secondary"
-                    style={{ padding: '20px 48px', fontWeight: 900, letterSpacing: 0.5, background: 'var(--surface-container-low)' }}
-                    onClick={() => { setPhase('form'); setResult(null); setStepsDone(0); setInspirationResults([]); }}
-                  >
-                    🔄 RENCANAKAN ULANG
-                  </button>
+                  ))}
                 </div>
               </div>
             )}
 
-            {/* ── ITINERARY MODAL - REFINED ────────────────────────────────────── */}
-            {selectedDest && (
-              <div
+            {/* Replanning button */}
+            <div style={{ marginTop: 80, textAlign: 'center' }}>
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '20px 48px', fontWeight: 900, letterSpacing: 0.5, background: 'var(--surface-container-low)' }}
+                onClick={() => { setPhase('form'); setResult(null); setStepsDone(0); setInspirationResults([]); }}
+              >
+                🔄 RENCANAKAN ULANG
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── ITINERARY MODAL ─────────────────────────────────────────────────── */}
+        {selectedDest && (
+          <div
+            onClick={() => setSelectedDest(null)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(28,28,25,0.7)', backdropFilter: 'blur(20px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24
+            }}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                background: 'var(--surface)', width: '100%', maxWidth: 720, maxHeight: '90vh',
+                borderRadius: 'var(--radius-xl)', overflowY: 'auto', boxShadow: '0 40px 100px rgba(0,0,0,0.5)',
+                position: 'relative', display: 'flex', flexDirection: 'column'
+              }}
+            >
+              <button
                 onClick={() => setSelectedDest(null)}
                 style={{
-                  position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(28,28,25,0.7)', backdropFilter: 'blur(20px)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24
+                  position: 'absolute', top: 24, right: 24, width: 48, height: 48, borderRadius: 24,
+                  background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', color: '#fff',
+                  border: 'none', cursor: 'pointer', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 24, fontWeight: 900
                 }}
               >
-                <div
-                  onClick={e => e.stopPropagation()}
-                  style={{
-                    background: 'var(--surface)', width: '100%', maxWidth: 720, maxHeight: '90vh',
-                    borderRadius: 'var(--radius-xl)', overflowY: 'auto', boxShadow: '0 40px 100px rgba(0,0,0,0.5)',
-                    position: 'relative', display: 'flex', flexDirection: 'column'
-                  }}
-                >
-                  <button
-                    onClick={() => setSelectedDest(null)}
-                    style={{
-                      position: 'absolute', top: 24, right: 24, width: 48, height: 48, borderRadius: 24,
-                      background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', color: '#fff',
-                      border: 'none', cursor: 'pointer', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 24, fontWeight: 900
-                    }}
-                  >
-                    ✕
-                  </button>
+                ✕
+              </button>
 
-                  <div className="asymmetric-image" style={{ height: 360, width: '100%', position: 'relative' }}>
-                    <img src={selectedDest.image} alt={selectedDest.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--surface), transparent)' }} />
-                    <div style={{ position: 'absolute', bottom: 40, left: 40, right: 40 }}>
-                      <p style={{ fontSize: 13, color: 'var(--primary)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2.5, marginBottom: 8 }}>DESTINATION GUIDE</p>
-                      <h2 className="headline" style={{ fontSize: 56, fontWeight: 900, color: 'var(--on-surface)', lineHeight: 1, letterSpacing: -3 }}>{selectedDest.name}</h2>
-                      <p style={{ fontSize: 18, color: 'var(--on-surface-variant)', marginTop: 12, fontWeight: 600 }}>{selectedDest.location}</p>
-                    </div>
-                  </div>
-
-                  <div style={{ padding: '0 40px 64px', flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 24, background: 'var(--surface-container-low)', padding: 32, borderRadius: 'var(--radius-lg)', marginBottom: 48, position: 'relative' }}>
-                      <div style={{ fontSize: 48, background: 'var(--surface-container-highest)', width: 80, height: 80, borderRadius: 'var(--radius-full)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✨</div>
-                      <div>
-                        <h3 className="headline" style={{ fontSize: 20, fontWeight: 900 }}>AI Smart Itinerary</h3>
-                        <p style={{ fontSize: 15, color: 'var(--on-surface-variant)', marginTop: 6, fontWeight: 700 }}>
-                          {people} pax · {days} days · Est. {formatCurrency(selectedDest.estTotalCost)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div style={{ position: 'relative', paddingLeft: 32, display: 'flex', flexDirection: 'column', gap: 48 }}>
-                      <div style={{ position: 'absolute', left: 4, top: 4, bottom: 4, width: 2, background: 'var(--primary)', opacity: 0.1 }} />
-                      {selectedDest.itinerary.map((day, idx) => (
-                        <div key={idx} style={{ position: 'relative' }}>
-                          <div style={{
-                            position: 'absolute', left: -36, top: 6, width: 10, height: 10, borderRadius: 5,
-                            background: 'var(--primary)', boxShadow: '0 0 10px rgba(158,0,31,0.4)'
-                          }} />
-                          <h4 style={{ fontSize: 12, fontWeight: 900, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>HARI {day.day}</h4>
-                          <h5 className="headline" style={{ fontSize: 26, fontWeight: 900, marginBottom: 20 }}>{day.title}</h5>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                            {day.activities.map((act, i) => (
-                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 20, background: 'var(--surface-container-low)', padding: 20, borderRadius: 'var(--radius-md)' }}>
-                                <span style={{ fontSize: 24 }}>
-                                  {i === 0 ? '🛫' : i === day.activities.length - 1 ? '🏨' : '📍'}
-                                </span>
-                                <span style={{ fontSize: 16, fontWeight: 700, opacity: 0.9 }}>{act}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div style={{ marginTop: 64 }}>
-                      <button
-                        className="btn btn-primary btn-full shadow-lg"
-                        style={{ padding: 24, fontSize: 18, fontWeight: 900, letterSpacing: 1 }}
-                        onClick={() => { setSelectedDest(null); navigate('/kalender'); }}
-                      >
-                        SIMPAN KE KALENDER 🗓️
-                      </button>
-                    </div>
-                  </div>
+              <div className="asymmetric-image" style={{ height: 360, width: '100%', position: 'relative' }}>
+                <img src={selectedDest.image} alt={selectedDest.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--surface), transparent)' }} />
+                <div style={{ position: 'absolute', bottom: 40, left: 40, right: 40 }}>
+                  <p style={{ fontSize: 13, color: 'var(--primary)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2.5, marginBottom: 8 }}>DESTINATION GUIDE</p>
+                  <h2 className="headline" style={{ fontSize: 56, fontWeight: 900, color: 'var(--on-surface)', lineHeight: 1, letterSpacing: -3 }}>{selectedDest.name}</h2>
+                  <p style={{ fontSize: 18, color: 'var(--on-surface-variant)', marginTop: 12, fontWeight: 600 }}>{selectedDest.location}</p>
                 </div>
               </div>
-            )}
 
-            {shareDest && <ShareSheet dest={shareDest} onClose={() => setShareDest(null)} />}
+              <div style={{ padding: '0 40px 64px', flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 24, background: 'var(--surface-container-low)', padding: 32, borderRadius: 'var(--radius-lg)', marginBottom: 48 }}>
+                  <div style={{ fontSize: 48, background: 'var(--surface-container-highest)', width: 80, height: 80, borderRadius: 'var(--radius-full)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✨</div>
+                  <div>
+                    <h3 className="headline" style={{ fontSize: 20, fontWeight: 900 }}>AI Smart Itinerary</h3>
+                    <p style={{ fontSize: 15, color: 'var(--on-surface-variant)', marginTop: 6, fontWeight: 700 }}>
+                      {people} pax · {days} days · Est. {formatCurrency(selectedDest.estTotalCost)}
+                    </p>
+                  </div>
+                </div>
 
-            <style>{`
+                <div style={{ position: 'relative', paddingLeft: 32, display: 'flex', flexDirection: 'column', gap: 48 }}>
+                  <div style={{ position: 'absolute', left: 4, top: 4, bottom: 4, width: 2, background: 'var(--primary)', opacity: 0.1 }} />
+                  {selectedDest.itinerary.map((day, idx) => (
+                    <div key={idx} style={{ position: 'relative' }}>
+                      <div style={{
+                        position: 'absolute', left: -36, top: 6, width: 10, height: 10, borderRadius: 5,
+                        background: 'var(--primary)', boxShadow: '0 0 10px rgba(158,0,31,0.4)'
+                      }} />
+                      <h4 style={{ fontSize: 12, fontWeight: 900, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>HARI {day.day}</h4>
+                      <h5 className="headline" style={{ fontSize: 26, fontWeight: 900, marginBottom: 20 }}>{day.title}</h5>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {day.activities.map((act, i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 20, background: 'var(--surface-container-low)', padding: 20, borderRadius: 'var(--radius-md)' }}>
+                            <span style={{ fontSize: 24 }}>
+                              {i === 0 ? '🛫' : i === day.activities.length - 1 ? '🏨' : '📍'}
+                            </span>
+                            <span style={{ fontSize: 16, fontWeight: 700, opacity: 0.9 }}>{act}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ marginTop: 64 }}>
+                  <button
+                    className="btn btn-primary btn-full shadow-lg"
+                    style={{ padding: 24, fontSize: 18, fontWeight: 900, letterSpacing: 1 }}
+                    onClick={() => { setSelectedDest(null); navigate('/kalender'); }}
+                  >
+                    SIMPAN KE KALENDER 🗓️
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Share sheet + global styles — FIX 4: inside the returned JSX */}
+        {shareDest && <ShareSheet dest={shareDest} onClose={() => setShareDest(null)} />}
+
+        <style>{`
           .hover-scale { transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
           .hover-scale:hover { transform: translateY(-8px); }
           @keyframes spin { to { transform: rotate(360deg); } }
           @keyframes pulse { 0% { opacity: 0.05; } 50% { opacity: 0.15; } 100% { opacity: 0.05; } }
         `}</style>
-          </div>
-        );
+      </div>
+    );
   }
 
-        return null;
+  return null;
 }

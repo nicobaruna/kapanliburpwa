@@ -28,8 +28,8 @@ export interface RoadTripDetails {
   distanceKm: number;
   litersNeeded: number;
   pertalitePerLiter: number;
-  fuelCostTotal: number;  // round trip, per mobil
-  tollCostTotal: number;  // round trip, per mobil
+  fuelCostTotal: number;
+  tollCostTotal: number;
   totalRoadTripCost: number;
 }
 
@@ -44,7 +44,6 @@ export interface RecommendationResult extends Destination {
   dynamicTags: { label: string; type: 'normal' | 'danger' | 'warning' | 'success' }[];
 }
 
-// Basis data destinasi yang diperluas
 const BASE_DESTINATIONS: (Omit<Destination, 'image' | 'weatherForecast' | 'flightPrice'> & { searchQuery: string })[] = [
   {
     id: 'DPS',
@@ -54,6 +53,7 @@ const BASE_DESTINATIONS: (Omit<Destination, 'image' | 'weatherForecast' | 'fligh
     flightDurationHours: 1.5,
     searchQuery: 'Uluwatu Bali Temple',
     baseTags: [{ label: '🏖️ Pantai', type: 'normal' }, { label: 'TRENDING', type: 'danger' }],
+    vacationTypes: ['pantai'],
     itinerary: [
       { day: 1, title: 'Arrival & Beach Club', activities: ['Check-in Hotel', 'Makan siang di Single Fin', 'Sunset di Uluwatu Temple & Tari Kecak'] },
       { day: 2, title: 'Pantai Tersembunyi', activities: ['Pantai Melasti', 'Makan Seafood Jimbaran', 'Santai di Savaya'] },
@@ -68,6 +68,7 @@ const BASE_DESTINATIONS: (Omit<Destination, 'image' | 'weatherForecast' | 'fligh
     flightDurationHours: 1,
     searchQuery: 'Borobudur Temple Sunrise',
     baseTags: [{ label: '🏛️ Budaya', type: 'normal' }],
+    vacationTypes: ['kota'],
     itinerary: [
       { day: 1, title: 'Tiba di Yogyakarta', activities: ['Tiba di YIA', 'Kuliner Gudeg', 'Jalan-jalan Malioboro malam'] },
       { day: 2, title: 'Sunrise Magelang', activities: ['Sunrise di Punthuk Setumbu', 'Eksplorasi Candi Borobudur', 'VW Safari Tour keliling desa'] },
@@ -82,6 +83,7 @@ const BASE_DESTINATIONS: (Omit<Destination, 'image' | 'weatherForecast' | 'fligh
     flightDurationHours: 2.5,
     searchQuery: 'Labuan Bajo Padar Island',
     baseTags: [{ label: '🌊 Premium', type: 'warning' }],
+    vacationTypes: ['pantai', 'alam'],
     itinerary: [
       { day: 1, title: 'Tiba & Sail', activities: ['Tiba di Bandara Komodo', 'Check-in Kapal Phinisi', 'Sunset di Pulau Kalong'] },
       { day: 2, title: 'Kepingan Surga', activities: ['Trekking Pulau Padar', 'Pink Beach', 'Melihat Komodo di Pulau Rinca'] },
@@ -96,6 +98,7 @@ const BASE_DESTINATIONS: (Omit<Destination, 'image' | 'weatherForecast' | 'fligh
     flightDurationHours: 1.5,
     searchQuery: 'Mount Bromo Sunrise',
     baseTags: [{ label: '⛰️ Petualangan Alam', type: 'normal' }],
+    vacationTypes: ['gunung', 'alam'],
     itinerary: [
       { day: 1, title: 'Tiba di Malang', activities: ['Tiba di Bandara Abdul Rachman Saleh', 'Kuliner Bakso President', 'Istirahat lebih awal'] },
       { day: 2, title: 'Sunrise Bromo', activities: ['Penanjakan 1 03:00 AM', 'Kawah Bromo', 'Bukit Teletubbies & Pasir Berbisik'] },
@@ -110,6 +113,7 @@ const BASE_DESTINATIONS: (Omit<Destination, 'image' | 'weatherForecast' | 'fligh
     flightDurationHours: 2,
     searchQuery: 'Gili Trawangan Beach',
     baseTags: [{ label: '🚤 Island Hopping', type: 'normal' }],
+    vacationTypes: ['pantai'],
     itinerary: [
       { day: 1, title: 'Lombok Tengah', activities: ['Tiba di Bandara Lombok', 'Desa Sade', 'Sunset di Pantai Kuta Mandalika'] },
       { day: 2, title: 'Gili Trawangan', activities: ['Nyebrang via Bangsal', 'Bersepeda keliling Gili', 'Sunset swing di pantai barat'] },
@@ -124,6 +128,7 @@ const BASE_DESTINATIONS: (Omit<Destination, 'image' | 'weatherForecast' | 'fligh
     flightDurationHours: 2.5,
     searchQuery: 'Lake Toba Samosir',
     baseTags: [{ label: '🛶 Sejarah Alam', type: 'normal' }],
+    vacationTypes: ['alam'],
     itinerary: [
       { day: 1, title: 'Tiba di Medan', activities: ['Tiba di Kualanamu', 'Kuliner Ucok Durian', 'Perjalanan darat ke Parapat'] },
       { day: 2, title: 'Eksplor Samosir', activities: ['Nyebrang Ferry', 'Desa Tomok (Makam Raja Sidabutar)', 'Air Terjun Sipiso-piso'] },
@@ -138,6 +143,7 @@ const BASE_DESTINATIONS: (Omit<Destination, 'image' | 'weatherForecast' | 'fligh
     flightDurationHours: 4,
     searchQuery: 'Wayag Raja Ampat',
     baseTags: [{ label: '💎 Ultimate Dream', type: 'danger' }],
+    vacationTypes: ['pantai', 'alam'],
     itinerary: [
       { day: 1, title: 'Perjalanan Panjang', activities: ['Tiba di Sorong', 'Nyebrang ke Waisai', 'Check-in Resort'] },
       { day: 2, title: 'Piaynemo', activities: ['Trekking Puncak Piaynemo', 'Telaga Bintang', 'Arborek Village'] },
@@ -152,6 +158,7 @@ const BASE_DESTINATIONS: (Omit<Destination, 'image' | 'weatherForecast' | 'fligh
     flightDurationHours: 0.5,
     searchQuery: 'Lembang Bandung',
     baseTags: [{ label: '🚗 Roadtrip Recommended', type: 'success' }],
+    vacationTypes: ['alam', 'kota'],
     itinerary: [
       { day: 1, title: 'Tiba & Kuliner', activities: ['Perjalanan via Tol (Jika dari Jakarta) / Pesawat', 'Makan di Kampung Daun', 'Lembang Park & Zoo'] },
       { day: 2, title: 'Wisata Alam', activities: ['Tangkuban Perahu', 'Floating Market Lembang', 'Orchid Forest Cikole'] },
@@ -161,10 +168,9 @@ const BASE_DESTINATIONS: (Omit<Destination, 'image' | 'weatherForecast' | 'fligh
 ];
 
 // ── Road Trip constants ────────────────────────────────────────────────────────
-const PERTALITE_PER_LITER = 10_000; // Rp/liter (harga Pertalite 2024)
-const KM_PER_LITER = 10;            // konsumsi BBM 1:10
+const PERTALITE_PER_LITER = 10_000;
+const KM_PER_LITER = 10;
 
-// Jarak (km) & biaya tol sekali jalan (Rp) per kota asal menuju BDO (Bandung/Lembang)
 const ROAD_TRIP_TABLE: Record<string, Record<string, { distanceKm: number; tollOneWayRp: number }>> = {
   BDO: {
     jakarta: { distanceKm: 150, tollOneWayRp: 55_000 },
@@ -173,18 +179,18 @@ const ROAD_TRIP_TABLE: Record<string, Record<string, { distanceKm: number; tollO
     yogyakarta: { distanceKm: 390, tollOneWayRp: 100_000 },
     semarang: { distanceKm: 340, tollOneWayRp: 95_000 },
     malang: { distanceKm: 780, tollOneWayRp: 200_000 },
-    medan: { distanceKm: 2150, tollOneWayRp: 0 }, // jalan umum, hampir tidak feasible
+    medan: { distanceKm: 2150, tollOneWayRp: 0 },
     makassar: { distanceKm: 2500, tollOneWayRp: 0 },
-    bali: { distanceKm: 1250, tollOneWayRp: 0 }, // via ferry
+    bali: { distanceKm: 1250, tollOneWayRp: 0 },
   },
 };
 
 function calcRoadTrip(destId: string, origin: string): RoadTripDetails | null {
   const table = ROAD_TRIP_TABLE[destId];
   if (!table) return null;
-  const data = table[origin] ?? table['jakarta']; // fallback ke Jakarta jika origin tidak ada
+  const data = table[origin] ?? table['jakarta'];
   const distanceKm = data.distanceKm;
-  const litersNeeded = (distanceKm * 2) / KM_PER_LITER; // perjalanan pulang-pergi
+  const litersNeeded = (distanceKm * 2) / KM_PER_LITER;
   const fuelCostTotal = Math.round(litersNeeded * PERTALITE_PER_LITER);
   const tollCostTotal = data.tollOneWayRp * 2;
   return {
@@ -197,56 +203,26 @@ function calcRoadTrip(destId: string, origin: string): RoadTripDetails | null {
   };
 }
 
-// Road trip destination IDs — tidak ada harga tiket pesawat
 const ROAD_TRIP_IDS = new Set(['BDO']);
 
-// ── Road Trip constants ────────────────────────────────────────────────────────
-const PERTALITE_PER_LITER = 10_000; // Rp/liter (harga Pertalite 2024)
-const KM_PER_LITER = 10;            // konsumsi BBM 1:10
-
-// Jarak (km) & biaya tol sekali jalan (Rp) per kota asal menuju BDO (Bandung/Lembang)
-const ROAD_TRIP_TABLE: Record<string, Record<string, { distanceKm: number; tollOneWayRp: number }>> = {
-  BDO: {
-    jakarta: { distanceKm: 150, tollOneWayRp: 55_000 },
-    bandung: { distanceKm: 30, tollOneWayRp: 0 },
-    surabaya: { distanceKm: 700, tollOneWayRp: 185_000 },
-    yogyakarta: { distanceKm: 390, tollOneWayRp: 100_000 },
-    semarang: { distanceKm: 340, tollOneWayRp: 95_000 },
-    malang: { distanceKm: 780, tollOneWayRp: 200_000 },
-    medan: { distanceKm: 2150, tollOneWayRp: 0 }, // jalan umum, hampir tidak feasible
-    makassar: { distanceKm: 2500, tollOneWayRp: 0 },
-    bali: { distanceKm: 1250, tollOneWayRp: 0 }, // via ferry
-  },
-};
-
-function calcRoadTrip(destId: string, origin: string): RoadTripDetails | null {
-  const table = ROAD_TRIP_TABLE[destId];
-  if (!table) return null;
-  const data = table[origin] ?? table['jakarta']; // fallback ke Jakarta jika origin tidak ada
-  const distanceKm = data.distanceKm;
-  const litersNeeded = (distanceKm * 2) / KM_PER_LITER; // perjalanan pulang-pergi
-  const fuelCostTotal = Math.round(litersNeeded * PERTALITE_PER_LITER);
-  const tollCostTotal = data.tollOneWayRp * 2;
-  return {
-    distanceKm,
-    litersNeeded,
-    pertalitePerLiter: PERTALITE_PER_LITER,
-    fuelCostTotal,
-    tollCostTotal,
-    totalRoadTripCost: fuelCostTotal + tollCostTotal,
-  };
-}
-
-// Road trip destination IDs — tidak ada harga tiket pesawat
-const ROAD_TRIP_IDS = new Set(['BDO']);
-
-// In-memory cache to prevent redundant proxy requests (reduces ECONNRESET risks)
+// ── Caches ────────────────────────────────────────────────────────────────────
 const flightCache: Record<string, number> = {};
 const imageCache: Record<string, string> = {};
 
-// Helper untuk fetch Google Flights via SerpApi Proxy
+// ── Image fallbacks per destination ──────────────────────────────────────────
+const IMAGE_FALLBACKS: Record<string, string> = {
+  DPS: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800',
+  YIA: 'https://images.unsplash.com/photo-1596402184320-417e7178b2cd?w=800',
+  LBJ: 'https://images.unsplash.com/photo-1552733407-5d5c46c3bb3b?w=800',
+  MLG: 'https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?w=800',
+  LOP: 'https://images.unsplash.com/photo-1520402099678-4c9e02b0e7c5?w=800',
+  KNO: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800',
+  SOQ: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800',
+  BDO: 'https://images.unsplash.com/photo-1555400038-63f5ba517a47?w=800',
+};
+
 async function fetchFlightPrice(destinationIATA: string, outDate: string, inDate: string): Promise<number> {
-  if (ROAD_TRIP_IDS.has(destinationIATA)) return 0; // road trip, tidak ada tiket pesawat
+  if (ROAD_TRIP_IDS.has(destinationIATA)) return 0;
   const cacheKey = `${destinationIATA}_${outDate}_${inDate}`;
   if (flightCache[cacheKey]) return flightCache[cacheKey];
 
@@ -255,35 +231,31 @@ async function fetchFlightPrice(destinationIATA: string, outDate: string, inDate
     const res = await fetch(url);
     const data = await res.json();
 
-    if (data.best_flights && data.best_flights.length > 0) {
-      const price = data.best_flights[0].price;
-      flightCache[cacheKey] = price;
-      return price;
-    } else if (data.other_flights && data.other_flights.length > 0) {
-      const price = data.other_flights[0].price;
-      flightCache[cacheKey] = price;
-      return price;
+    if (data.best_flights?.length > 0) {
+      flightCache[cacheKey] = data.best_flights[0].price;
+      return flightCache[cacheKey];
+    } else if (data.other_flights?.length > 0) {
+      flightCache[cacheKey] = data.other_flights[0].price;
+      return flightCache[cacheKey];
     }
   } catch (error) {
     console.warn(`Gagal mengambil harga tiket untuk ${destinationIATA}`, error);
   }
-  return 0; // fallback jika gagal
+  return 0;
 }
 
-// Helper untuk fetch Google Images via SerpApi Proxy
+// FIX 3: added required `fallback` parameter
 async function fetchImage(query: string, fallback: string): Promise<string> {
   if (imageCache[query]) return imageCache[query];
-  // Jika API key tidak ada, langsung pakai fallback per-destinasi
   if (!SERP_API_KEY) return fallback;
   try {
     const url = `/api/serp/search.json?engine=google_images&q=${encodeURIComponent(query + ' tourism high quality')}&api_key=${SERP_API_KEY}`;
     const res = await fetch(url);
     const data = await res.json();
 
-    if (data.images_results && data.images_results.length > 0) {
-      const img = data.images_results[0].original;
-      imageCache[query] = img;
-      return img;
+    if (data.images_results?.length > 0) {
+      imageCache[query] = data.images_results[0].original;
+      return imageCache[query];
     }
   } catch (error) {
     console.warn(`Gagal mengambil gambar untuk ${query}`, error);
@@ -291,23 +263,14 @@ async function fetchImage(query: string, fallback: string): Promise<string> {
   return fallback;
 }
 
-/**
- * Algoritma Rekomendasi (SerpApi Google Flights + Google Images)
- *
- * - estTotalCost = (tiketPP × people) + (hotelPerMalam × days)
- * - Destinasi hanya lolos jika estTotalCost <= budget
- * - Gaya liburan mempengaruhi prioritas skor:
- *     hemat   → utamakan harga terendah
- *     balance → seimbangkan harga & kenyamanan
- *     luxury  → utamakan kenyamanan (hotel mahal, destinasi premium)
- * - vacationType mempengaruhi bonus skor destinasi yang sesuai
- */
 export async function getRecommendations(
   userBudget: number,
   people: number = 2,
   days: number = 3,
   style: TripStyle = 'balance',
   origin: string = 'jakarta',
+  // FIX 2: added vacationType as an explicit optional parameter
+  vacationType?: 'kota' | 'alam' | 'pantai' | 'gunung',
 ): Promise<RecommendationResult[]> {
   const nextLW = getNextLongWeekend();
   const outDate = nextLW ? nextLW.startDate : new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0];
@@ -316,8 +279,10 @@ export async function getRecommendations(
   const results = await Promise.all(BASE_DESTINATIONS.map(async (baseDest) => {
     const isRoadTrip = ROAD_TRIP_IDS.has(baseDest.id);
     const rawFlight = await fetchFlightPrice(baseDest.id, outDate, inDate);
-    const image = await fetchImage(baseDest.searchQuery);
-    const weatherForecast: 'Sunny' | 'Rainy' = Math.random() > 0.3 ? 'Sunny' : 'Rainy';
+    // FIX 3: pass per-destination fallback URL to fetchImage
+    const image = await fetchImage(baseDest.searchQuery, IMAGE_FALLBACKS[baseDest.id] ?? '');
+    // FIX 4: match the full union type from the Destination interface
+    const weatherForecast: 'Sunny' | 'Rainy' | 'Cloudy' = Math.random() > 0.3 ? 'Sunny' : 'Rainy';
 
     const flightFallbacks: Record<string, number> = {
       DPS: 1_200_000, YIA: 800_000, LBJ: 2_500_000, MLG: 1_100_000,
@@ -329,13 +294,12 @@ export async function getRecommendations(
     let roadTripDetails: RoadTripDetails | undefined;
 
     if (isRoadTrip) {
-      // Biaya transportasi = bensin PP + tol PP (per mobil, bukan per orang)
       roadTripDetails = calcRoadTrip(baseDest.id, origin) ?? {
         distanceKm: 150, litersNeeded: 30, pertalitePerLiter: PERTALITE_PER_LITER,
         fuelCostTotal: 300_000, tollCostTotal: 110_000, totalRoadTripCost: 410_000,
       };
       totalFlightCost = roadTripDetails.totalRoadTripCost;
-      pricePerPerson = 0; // tidak ada tiket
+      pricePerPerson = 0;
     } else {
       pricePerPerson = rawFlight || flightFallbacks[baseDest.id] || 0;
       totalFlightCost = pricePerPerson * people;
@@ -349,7 +313,7 @@ export async function getRecommendations(
     let score = 0;
 
     // ── Bonus berdasarkan tipe liburan user ──────────────────────────────
-    if (vacationType && baseDest.vacationTypes.includes(vacationType as 'kota' | 'alam' | 'pantai' | 'gunung')) {
+    if (vacationType && baseDest.vacationTypes.includes(vacationType)) {
       score += 25;
       tags.push({ label: '⭐ Sesuai Preferensi', type: 'success' });
     }
@@ -371,7 +335,7 @@ export async function getRecommendations(
       else if (ratio <= 1.0) score += 5;
       if (baseDest.hotelPerNight > 1_000_000) score -= 25;
       if (baseDest.hotelPerNight > 1_800_000) score -= 25;
-      if (isRoadTrip) score += 15; // road trip biasanya lebih hemat
+      if (isRoadTrip) score += 15;
     } else if (style === 'luxury') {
       if (baseDest.hotelPerNight >= 2_500_000) score += 50;
       else if (baseDest.hotelPerNight >= 1_500_000) score += 30;
@@ -417,6 +381,7 @@ export async function getRecommendations(
       roadTripDetails,
       dynamicTags: tags,
       vacationTypes: baseDest.vacationTypes,
+      baseTags: baseDest.baseTags,
     } as RecommendationResult;
   }));
 

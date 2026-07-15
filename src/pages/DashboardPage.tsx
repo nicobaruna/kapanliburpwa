@@ -4,9 +4,13 @@ import { useUser } from '../context/UserContext';
 import {
   getNextHoliday, getUpcomingHolidays, getNextLongWeekend,
   getDaysUntil, formatLongWeekendRange,
-  getDaysUntil, formatLongWeekendRange,
+
 } from '../utils/dateUtils';
 import type { Holiday, LongWeekend } from '../data/holidays2026';
+import type { SharePayload } from '../components/ShareSheet';
+import ShareSheet from '../components/ShareSheet';
+
+
 import { getRecommendations, RecommendationResult, formatCurrency } from '../services/api';
 import {
   isReminderEnabled, enableReminders, disableReminders, checkAndFireReminders,
@@ -15,19 +19,38 @@ import {
 export default function DashboardPage() {
   const { user } = useUser();
   const navigate = useNavigate();
-  const [nextHoliday, setNextHoliday] = useState<Holiday | null>(null);
+  const goToCalendar = (date: string) => navigate(`/calendar?date=${date}`);
+
+const [nextHoliday, setNextHoliday] = useState<Holiday | null>(null);
   const [upcoming, setUpcoming] = useState<Holiday[]>([]);
   const [longWeekends, setLongWeekends] = useState<LongWeekend[]>([]);
   const [daysUntil, setDaysUntil] = useState<number | null>(null);
   const [inspirations, setInspirations] = useState<RecommendationResult[]>([]);
   const [reminderOn, setReminderOn] = useState(false);
+  const [reminderLoading, setReminderLoading] = useState(false);
   const [reminderToast, setReminderToast] = useState('');
+  const [remindersOn, setRemindersOn] = useState(false);
+  const [hoursLeft, setHoursLeft] = useState(0);
+  const [minsLeft, setMinsLeft] = useState(0);
+  const [shareDest, setShareDest] = useState<SharePayload | null>(null);
+
+useEffect(() => {
+    if (nextHoliday) {
+      const now = new Date();
+      const target = new Date(nextHoliday.date + 'T00:00:00');
+      const diffMs = target.getTime() - now.getTime();
+      const totalMins = Math.max(0, Math.floor(diffMs / 60000));
+      const hrs = Math.floor(totalMins / 60);
+      const mins = totalMins % 60;
+      setHoursLeft(hrs);
+      setMinsLeft(mins);
+    }
+  }, [nextHoliday]);
 
   useEffect(() => {
     const nextH = getNextHoliday();
     setNextHoliday(nextH);
     if (nextH) setDaysUntil(getDaysUntil(nextH.date));
-
 
     let currentLW = getNextLongWeekend();
     const lws: LongWeekend[] = [];
@@ -37,7 +60,6 @@ export default function DashboardPage() {
     }
     setLongWeekends(lws);
     setUpcoming(getUpcomingHolidays(4));
-    setUpcoming(getUpcomingHolidays(4));
 
     const budget = window.localStorage.getItem('kapanlibur_budget')
       ? parseInt(window.localStorage.getItem('kapanlibur_budget') || '4500000')
@@ -45,7 +67,9 @@ export default function DashboardPage() {
     getRecommendations(budget).then(res => setInspirations(res.slice(0, 4)));
 
     // Sync reminder toggle state and fire any pending reminders
-    setReminderOn(isReminderEnabled());
+    const enabled = isReminderEnabled();
+    setReminderOn(enabled);
+    setRemindersOn(enabled);
     checkAndFireReminders();
   }, []);
 
@@ -53,8 +77,10 @@ export default function DashboardPage() {
     if (reminderOn) {
       disableReminders();
       setReminderOn(false);
+      setRemindersOn(false);
       showToast('🔕 Pengingat dinonaktifkan');
     } else {
+      setReminderLoading(true);
       const result = await enableReminders();
       if (result === 'granted') {
         setReminderOn(true);
@@ -242,7 +268,7 @@ export default function DashboardPage() {
                 <button
                   onClick={handleReminderToggle}
                   disabled={reminderLoading}
-                  aria-label={remindersOn ? 'Nonaktifkan pengingat' : 'Aktifkan pengingat'}
+                  aria-label={reminderOn ? 'Nonaktifkan pengingat' : 'Aktifkan pengingat'}
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
                     width: '100%',
@@ -575,7 +601,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ShareSheet */}
-      {shareDest && <ShareSheet dest={shareDest} onClose={() => setShareDest(null)} />}
+      {shareDest && <ShareSheet payload={shareDest} onClose={() => setShareDest(null)} />}
 
       <style>{`
         @keyframes db-enter {

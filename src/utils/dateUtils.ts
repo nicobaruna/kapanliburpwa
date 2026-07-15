@@ -104,3 +104,6 @@ export function formatLongWeekendRange(lw: LongWeekend): string {
 export function getMonthName(month: number): string {
   return MONTHS_ID[month];
 }
+export function toDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
