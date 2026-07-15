@@ -483,7 +483,7 @@ export default function FinancialPlannerPage() {
         )}
 
         {/* Share sheet + global styles — FIX 4: inside the returned JSX */}
-        {shareDest && <ShareSheet dest={shareDest} onClose={() => setShareDest(null)} />}
+        {shareDest && <ShareSheet payload={{ type: 'destination', dest: shareDest }} onClose={() => setShareDest(null)} />}
 
         <style>{`
           .hover-scale { transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }

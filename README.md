@@ -140,3 +140,27 @@ kapanliburpwa/
 Data hari libur dan cuti bersama bersumber dari:
 > **Kalender Hari Libur dan Cuti Bersama Bank Indonesia Tahun 2026**
 > Berdasarkan Keputusan Bersama Menteri Agama, Menteri Ketenagakerjaan, dan Menteri Pendayagunaan Aparatur Negara dan Reformasi Birokrasi Republik Indonesia.
+
+---
+
+## Deploy ke Vercel
+
+### 1. Import project ke Vercel
+- Framework preset: **Vite**
+- Build command: `npm run build`
+- Output directory: `dist`
+
+### 2. Set environment variable
+Tambahkan environment variable berikut di Vercel Project Settings:
+
+- `VITE_SERPAPI_KEY` = API key SerpAPI Anda
+
+### 3. Konfigurasi routing
+Project ini menggunakan React Router (SPA). File `vercel.json` sudah disiapkan untuk:
+
+- Rewrite route SPA ke `index.html`
+- Proxy endpoint `/api/serp/*` ke `https://serpapi.com/*`
+
+### 4. Deploy
+
+Setelah konfigurasi di atas, lakukan deploy dari branch utama.

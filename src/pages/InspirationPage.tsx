@@ -340,7 +340,7 @@ export default function InspirationPage() {
         </div>
       )}
 
-      {shareDest && <ShareSheet dest={shareDest} onClose={() => setShareDest(null)} />}
+      {shareDest && <ShareSheet payload={{ type: 'destination', dest: shareDest }} onClose={() => setShareDest(null)} />}
 
       <style>{`
         .hover-scale { transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1); }

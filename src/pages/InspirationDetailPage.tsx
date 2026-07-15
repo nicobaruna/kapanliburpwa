@@ -212,7 +212,7 @@ export default function InspirationDetailPage() {
         </button>
       </div>
 
-      {showShare && <ShareSheet dest={dest} onClose={() => setShowShare(false)} />}
+      {showShare && <ShareSheet payload={{ type: 'destination', dest }} onClose={() => setShowShare(false)} />}
     </div>
   );
 }
