@@ -19,7 +19,11 @@ import {
 export default function DashboardPage() {
   const { user } = useUser();
   const navigate = useNavigate();
-  const goToCalendar = (date: string) => navigate(`/calendar?date=${date}`);
+  const goToCalendar = (date: string, endDate?: string) => {
+    const params = new URLSearchParams({ date });
+    if (endDate) params.set('endDate', endDate);
+    navigate(`/calendar?${params.toString()}`);
+  };
 
 const [nextHoliday, setNextHoliday] = useState<Holiday | null>(null);
   const [upcoming, setUpcoming] = useState<Holiday[]>([]);
@@ -449,7 +453,7 @@ useEffect(() => {
 
               {/* Card 1: Aman */}
               <div
-                onClick={() => longWeekends[0] && goToCalendar(longWeekends[0].startDate)}
+                onClick={() => longWeekends[0] && goToCalendar(longWeekends[0].startDate, longWeekends[0].endDate)}
                 style={{
                   background: 'var(--secondary-container)',
                   padding: '18px 20px',
@@ -492,7 +496,7 @@ useEffect(() => {
 
               {/* Card 2: Perlu Cuti */}
               <div
-                onClick={() => longWeekends[1] && goToCalendar(longWeekends[1].startDate)}
+                onClick={() => longWeekends[1] && goToCalendar(longWeekends[1].startDate, longWeekends[1].endDate)}
                 style={{
                   background: 'rgba(251,146,60,0.11)',
                   padding: '18px 20px',

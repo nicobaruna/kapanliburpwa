@@ -8,6 +8,7 @@ import { HOLIDAYS_2026 } from '../data/holidays2026';
 
 export default function CalendarPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [upcoming, setUpcoming] = useState<Holiday[]>([]);
   const [nearestLW, setNearestLW] = useState<LongWeekend | null>(null);
   const [topRec, setTopRec] = useState<RecommendationResult | null>(null);
@@ -15,6 +16,8 @@ export default function CalendarPage() {
   const [calMonth, setCalMonth] = useState<number>(new Date().getMonth());
   const [highlighted, setHighlighted] = useState<string[]>([]);
   const [cutiHighlight, setCutiHighlight] = useState<string[]>([]);
+  const [selectedStartDate, setSelectedStartDate] = useState<string | null>(null);
+  const [selectedEndDate, setSelectedEndDate] = useState<string | null>(null);
 
   useEffect(() => {
     setUpcoming(getUpcomingHolidays(3));
@@ -25,6 +28,46 @@ export default function CalendarPage() {
       if (results.length > 0) setTopRec(results[0]);
     }).catch(() => { });
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const startDate = params.get('date');
+    const endDate = params.get('endDate');
+
+    if (!startDate) {
+      setSelectedStartDate(null);
+      setSelectedEndDate(null);
+      return;
+    }
+
+    const start = new Date(startDate + 'T00:00:00');
+    if (Number.isNaN(start.getTime())) return;
+
+    setSelectedStartDate(startDate);
+    setSelectedEndDate(endDate);
+
+    setCalYear(start.getFullYear());
+    setCalMonth(start.getMonth());
+
+    const dates: string[] = [];
+    if (endDate) {
+      const end = new Date(endDate + 'T00:00:00');
+      if (!Number.isNaN(end.getTime()) && end >= start) {
+        const cur = new Date(start);
+        while (cur <= end) {
+          dates.push(toDateStr(cur));
+          cur.setDate(cur.getDate() + 1);
+        }
+      }
+    }
+
+    setHighlighted(dates.length > 0 ? dates : [startDate]);
+    setCutiHighlight([]);
+
+    setTimeout(() => {
+      document.getElementById('calendar-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+  }, [location.search]);
 
   
 const cells = useMemo(() => {
@@ -53,7 +96,10 @@ const cells = useMemo(() => {
     return d.getFullYear() === calYear && d.getMonth() === calMonth;
   }).sort((a, b) => a.date.localeCompare(b.date));
 
-  const cutiRecs = useMemo(() => computeCutiRecs(calYear, calMonth), [calYear, calMonth]);
+  const cutiRecs = useMemo(
+    () => computeStrategicCutiRecs(calYear, calMonth, selectedStartDate, selectedEndDate),
+    [calYear, calMonth, selectedStartDate, selectedEndDate]
+  );
   
   useEffect(() => {
     const allSuggested = cutiRecs.flatMap(r => r.cutiDates);
@@ -156,7 +202,7 @@ const cells = useMemo(() => {
             </div>
 
             {/* Grid Constraints */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderTop: '1px solid var(--outline-variant)', borderLeft: '1px solid var(--outline-variant)', borderRadius: 16, overflow: 'hidden', marginBottom: 32 }}>
+            <div id="calendar-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderTop: '1px solid var(--outline-variant)', borderLeft: '1px solid var(--outline-variant)', borderRadius: 16, overflow: 'hidden', marginBottom: 24 }}>
               {cells.map((cell, idx) => {
         const isSunday = idx % 7 === 0;
         const isWeekend = idx % 7 === 0 || idx % 7 === 6;
@@ -170,7 +216,7 @@ const cells = useMemo(() => {
         const isHighlighted = isCell13 || isCell20 || isCell30 || isCell31;
         // Holiday and cuti detection
         const holiday = holidaysThisMonth.find(h => h.date === cell.dateStr);
-        const isCutiHighlighted = cutiHighlight.includes(cell.dateStr);
+        const isCutiHighlighted = cell.dateStr ? cutiHighlight.includes(cell.dateStr) : false;
         const background = isEmpty
           ? 'var(--surface-container-low)'
           : isHighlighted
@@ -229,20 +275,23 @@ const cells = useMemo(() => {
           </div>
         );
       })}
-      {/* CutI recommendations list */}
-      <div style={{ marginTop: 24 }}>
-        {cutiRecs.map((rec, i) => (
-          <div key={i} style={{ background: '#fff', borderRadius: 12, padding: 12, marginBottom: 8, border: '1px solid var(--outline-variant)' }}>
-            <strong>{formatShortDate(rec.startDate)} – {formatShortDate(rec.endDate)}</strong>
-            <div style={{ marginTop: 4, fontSize: 12, color: 'var(--on-surface-variant)' }}>
-              {rec.cutiDates.map(d => (
-                <span key={d} style={{ marginRight: 4 }}>{toDateStr(new Date(d + 'T00:00:00'))}</span>
-              ))}
             </div>
-          </div>
-        ))}
-      </div>
-            </div>
+
+            {/* Cuti recommendations legend */}
+            {cutiRecs.length > 0 && (
+              <div style={{ marginBottom: 32 }}>
+                {cutiRecs.map((rec, i) => (
+                  <div key={i} style={{ background: '#fff', borderRadius: 12, padding: 12, marginBottom: 8, border: '1px solid var(--outline-variant)' }}>
+                    <strong>{formatShortDate(rec.startDate)} – {formatShortDate(rec.endDate)}</strong>
+                    <div style={{ marginTop: 4, fontSize: 12, color: 'var(--on-surface-variant)' }}>
+                      {rec.cutiDates.map(d => (
+                        <span key={d} style={{ marginRight: 4 }}>{toDateStr(new Date(d + 'T00:00:00'))}</span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Bottom Cards inside Gray Container */}
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 24 }}>
@@ -453,7 +502,74 @@ interface CutiRec {
 }
 
 // Compute cuti recommendations for the given month/year based on cuti_bersama holidays
-function computeCutiRecs(year: number, month: number): CutiRec[] {
+function computeStrategicCutiRecs(year: number, month: number, selectedStartDate: string | null, selectedEndDate: string | null): CutiRec[] {
+  if (selectedStartDate && selectedEndDate) {
+    const start = new Date(selectedStartDate + 'T00:00:00');
+    const end = new Date(selectedEndDate + 'T00:00:00');
+
+    if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())) {
+      const startInMonth = start.getFullYear() === year && start.getMonth() === month;
+      const endInMonth = end.getFullYear() === year && end.getMonth() === month;
+
+      if (startInMonth && endInMonth && end >= start) {
+        const holidaySet = new Set(
+          HOLIDAYS_2026
+            .filter(h => {
+              const d = new Date(h.date + 'T00:00:00');
+              return d.getFullYear() === year && d.getMonth() === month;
+            })
+            .map(h => h.date)
+        );
+
+        const monthEnd = new Date(year, month + 1, 0);
+        const isNonWorking = (d: Date) => {
+          const ds = toDateStr(d);
+          const dow = d.getDay();
+          return dow === 0 || dow === 6 || holidaySet.has(ds);
+        };
+
+        const suggested: string[] = [];
+        const cur = new Date(end);
+        cur.setDate(cur.getDate() + 1);
+
+        while (cur <= monthEnd) {
+          const prev = new Date(cur);
+          prev.setDate(prev.getDate() - 1);
+
+          const isWorkingDay = !isNonWorking(cur);
+          const isAfterNonWorkingBlock = isNonWorking(prev);
+
+          if (isWorkingDay && isAfterNonWorkingBlock) {
+            let hasNearNonWorkingAhead = false;
+            for (let offset = 1; offset <= 4; offset++) {
+              const ahead = new Date(cur);
+              ahead.setDate(ahead.getDate() + offset);
+              if (ahead > monthEnd) break;
+              if (isNonWorking(ahead)) {
+                hasNearNonWorkingAhead = true;
+                break;
+              }
+            }
+
+            if (hasNearNonWorkingAhead) {
+              suggested.push(toDateStr(cur));
+            }
+          }
+
+          cur.setDate(cur.getDate() + 1);
+        }
+
+        if (suggested.length > 0) {
+          return [{
+            startDate: selectedStartDate,
+            endDate: selectedEndDate,
+            cutiDates: suggested,
+          }];
+        }
+      }
+    }
+  }
+
   // Filter holidays that are 'cuti_bersama' within the month
   const cutiHolidays = HOLIDAYS_2026.filter(h =>
     h.type.includes('cuti_bersama') &&
